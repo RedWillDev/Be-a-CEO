@@ -1,0 +1,15 @@
+# Rojo build outputs
+build/
+*.rbxl
+*.rbxlx
+*.rbxm
+*.rbxmx
+sourcemap.json
+
+# Local portable tools
+tools/
+
+# Editor and OS files
+.vscode/
+.DS_Store
+Thumbs.db

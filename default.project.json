@@ -1,0 +1,31 @@
+{
+  "name": "Be-a-CEO",
+  "servePort": 34872,
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "$ignoreUnknownInstances": true,
+      "BeACEO": {
+        "$className": "Folder",
+        "$path": "src/shared"
+      }
+    },
+    "ServerScriptService": {
+      "$ignoreUnknownInstances": true,
+      "BeACEO": {
+        "$className": "Folder",
+        "$path": "src/server"
+      }
+    },
+    "StarterPlayer": {
+      "$ignoreUnknownInstances": true,
+      "StarterPlayerScripts": {
+        "$ignoreUnknownInstances": true,
+        "BeACEO": {
+          "$className": "Folder",
+          "$path": "src/client"
+        }
+      }
+    }
+  }
+}

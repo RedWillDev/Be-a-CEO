@@ -4,7 +4,7 @@ Un jeu Roblox multijoueur : du garage à ta propre tour, crée ta marque et riva
 
 ## État du projet
 
-Le concept est validé et le dépôt est initialisé avec la documentation. Aucun prototype jouable ni projet Rojo n'est encore intégré. Aucune connexion à Roblox Studio ni publication du jeu n'a été effectuée.
+Le concept est validé et le dépôt contient maintenant le socle Rojo relié au lieu Roblox du projet. Le prototype jouable reste à construire.
 
 ## Document de conception
 
@@ -32,12 +32,28 @@ GitHub seul ne contrôle pas Studio. Une connexion locale au serveur MCP de Stud
 
 Les sources gérées par Rojo doivent être modifiées dans le dépôt ; éviter les modifications concurrentes du même script dans Studio. Les secrets ne doivent pas être versionnés.
 
+## Environnement de développement Windows
+
+Le projet utilise Rojo 7.7.1 et le port local `34872`.
+
+- `src/shared` est synchronisé vers `ReplicatedStorage/BeACEO`.
+- `src/server` est synchronisé vers `ServerScriptService/BeACEO`.
+- `src/client` est synchronisé vers `StarterPlayer/StarterPlayerScripts/BeACEO`.
+
+La configuration conserve les instances inconnues : la baseplate, le point d'apparition et les objets créés hors des dossiers `BeACEO` ne sont pas supprimés par Rojo.
+
+1. Exécuter `scripts/setup-rojo.ps1` une seule fois si Rojo n'est pas déjà disponible.
+2. Exécuter `scripts/serve.ps1` et laisser le serveur ouvert.
+3. Dans Roblox Studio, ouvrir le plugin Rojo et se connecter à `localhost:34872`.
+4. Exécuter `scripts/build.ps1` pour valider la configuration sans modifier la scène ouverte.
+5. Vérifier les changements avec `git status`, puis les envoyer vers GitHub avec un commit et un push.
+
 ## Prochaines étapes
 
-1. Configurer l'environnement local Windows ou macOS et Roblox Studio.
-2. Ajouter la structure Rojo et les dossiers serveur, client et partagés.
-3. Construire la ville et la première vente.
-4. Vérifier les sauvegardes, les reconnexions et le jeu à plusieurs dans Studio.
+1. Construire la ville et la première boucle de vente.
+2. Ajouter l'attribution des garages et la progression visible.
+3. Vérifier les sauvegardes, les reconnexions et le jeu à plusieurs dans Studio.
+4. Tester l'interface sur mobile avant d'ajouter les systèmes avancés.
 
 ## Références
 
