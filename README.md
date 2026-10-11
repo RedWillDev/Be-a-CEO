@@ -6,6 +6,8 @@ Un jeu Roblox multijoueur : du garage à ta propre tour, crée ta marque et riva
 
 Le premier prototype jouable est implémenté : ville de huit parcelles, commandes MarketBridge, ventes, bâtiments évolutifs, client VIP, achats personnels et véhicules liés au niveau de l'entreprise. Voir [le guide de test et les limites actuelles](docs/prototype-playtest.md). Les essais multijoueurs, mobiles et de sauvegarde en serveur publié restent nécessaires avant le lancement.
 
+La deuxième itération ajoute les objectifs permanents et quotidiens, le calendrier de cadeaux, trois accords fournisseurs, les événements de ville, les contributions collectives, la réputation, la publicité, le réapprovisionnement automatique et les ventes hors ligne plafonnées. Deux suites de tests isolés valident 69 assertions dans Studio. Ce n'est pas encore une version commerciale complète.
+
 ## Document de conception
 
 Lire [le document de conception complet](docs/roblox-tycoon-entrepreneur.md) pour les décisions de gameplay, la ville, la concurrence, la progression, la monétisation et la feuille de route.

@@ -27,12 +27,20 @@ label(top, "BE A CEO", UDim2.new(0.3, 0, 0, 29), UDim2.fromOffset(14, 6), 21, mi
 local cash = label(top, "Chargement…", UDim2.new(0.65, -15, 0, 29), UDim2.new(0.35, 0, 0, 6), 18)
 local summary = label(top, "Ouvre ton entreprise", UDim2.new(1, -28, 0, 35), UDim2.fromOffset(14, 41), 13, muted)
 local open = button(gui, "ENTREPRISE", UDim2.fromOffset(145, 42), UDim2.new(0, 12, 0, 104), function() end, Color3.fromRGB(31, 112, 94))
-button(gui, "Mon garage", UDim2.fromOffset(120, 42), UDim2.new(1, -132, 0, 104), function() fire("Home") end)
+local home = button(gui, "Mon garage", UDim2.fromOffset(120, 42), UDim2.new(1, -132, 0, 104), function() fire("Home") end)
 local panel = Instance.new("Frame") panel.Name = "Management" panel.Size, panel.Position = UDim2.new(0, 560, 0.68, 0), UDim2.new(0, 12, 0, 158) panel.BackgroundColor3 = Color3.fromRGB(24, 35, 47) panel.Parent = gui round(panel)
-local constraint = Instance.new("UISizeConstraint") constraint.MaxSize, constraint.MinSize, constraint.Parent = Vector2.new(560, 610), Vector2.new(280, 200), panel
+local constraint = Instance.new("UISizeConstraint") constraint.MaxSize, constraint.MinSize, constraint.Parent = Vector2.new(560, 610), Vector2.new(240, 130), panel
 local function resize()
  local v = workspace.CurrentCamera.ViewportSize
- panel.Size = UDim2.new(0, math.min(560, v.X - 24), 0, math.max(200, math.min(610, v.Y - 220)))
+ local compact = v.Y < 600
+ local y = compact and 122 or 158
+ top.Size = UDim2.new(1, -24, 0, compact and 66 or 86)
+ summary.Position = UDim2.fromOffset(14, compact and 29 or 41)
+ summary.TextSize = compact and 11 or 13
+ open.Position = UDim2.fromOffset(12, compact and 78 or 104)
+ home.Position = UDim2.new(1, -132, 0, compact and 78 or 104)
+ panel.Position = UDim2.fromOffset(12, y)
+ panel.Size = UDim2.new(0, math.min(560, v.X - 24), 0, math.max(130, math.min(610, v.Y - y - 72)))
 end
 resize() workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(resize)
 local title = label(panel, "MARKETBRIDGE", UDim2.new(1, -60, 0, 30), UDim2.fromOffset(16, 10), 20, mint)
@@ -68,7 +76,7 @@ local function render()
  local d = latest.Data
  liveLabels = {}
  for _, child in ipairs(scroll:GetChildren()) do if child:IsA("GuiObject") then child:Destroy() end end
- title.Text = currentTab == "Marché" and "MARKETBRIDGE" or currentTab == "Entreprise" and "TA MARQUE, TA VILLE" or "LA VIE DE CEO"
+ title.Text = currentTab == "Marché" and "MARKETBRIDGE" or currentTab == "Entreprise" and "TA MARQUE, TA VILLE" or currentTab == "Objectifs" and "OBJECTIFS & ÉVÉNEMENTS" or "LA VIE DE CEO"
  if currentTab == "Marché" then
   liveLabels.guide = textRow("", 65)
   local quickOrder = row(52)
@@ -76,21 +84,43 @@ local function render()
   for i, product in ipairs(C.Products) do card(product.Name, "Base : " .. product.Cost .. " $ / unité • vente conseillée : " .. product.Price .. " $", d.Product == i and "Produit en vitrine ✓" or "Choisir ce produit", function() fire("Product", i) end, d.Product == i) end
   textRow("Fournisseurs • compare coût, qualité et délai", 40)
   for i, supplier in ipairs(C.Suppliers) do card(supplier.Name, supplier.Detail .. " • " .. supplier.Delay .. " s • qualité " .. supplier.Quality, d.Supplier == i and "Fournisseur sélectionné ✓" or "Choisir", function() fire("Supplier", i) end, d.Supplier == i) end
-  card("Négocier le prochain lot", "Propose un engagement sur 10 unités pour obtenir 10 % de remise.", d.Negotiated and "Remise obtenue ✓" or "Proposer un achat en volume", function() fire("Negotiate", "Volume") end, d.Negotiated)
+  card("Accord de volume", "10 % de remise sur un lot de 10. Un seul accord par commande.", d.Negotiated and "Accord déjà conclu ✓" or "Négocier −10 %", function() fire("Negotiate", "Volume") end, d.Negotiated)
+  card("Relation fournisseur", (d.SupplierOrders and (d.SupplierOrders[tostring(d.Supplier)] or 0) or 0) .. " commandes chez ce fournisseur. Après 3 : remise fidélité de 15 %.", "Négocier la fidélité", function() fire("Negotiate", "Loyalty") end)
+  card("Contrôle qualité", "Renonce à la remise pour gagner +0,2 de qualité sur le prochain lot.", "Choisir la qualité", function() fire("Negotiate", "Sample") end)
   local r = row(52)
   button(r, "Commander le lot sélectionné", UDim2.new(1, -20, 0, 36), UDim2.fromOffset(10, 8), function() fire("Order") end, Color3.fromRGB(31, 112, 94))
   textRow("Les clients achètent automatiquement le stock. Le prix économique vend plus vite ; le premium vend plus lentement. La qualité et la tendance attirent les clients disputés.", 78)
   for i, name in ipairs({"Économique • ventes rapides", "Équilibré • prix conseillé", "Premium • marge élevée"}) do
    local r2 = row(42) button(r2, (d.PriceMode == i and "✓ " or "") .. name, UDim2.new(1, -12, 0, 34), UDim2.fromOffset(6, 4), function() fire("Price", i) end)
   end
+  card("Liquider le stock", "Récupère 50 % du coût de base des produits pour changer de gamme. Ne compte pas comme vente.", "Liquider tout le stock", function() fire("Liquidate") end)
  elseif currentTab == "Entreprise" then
   liveLabels.progress = textRow("", 75)
   local nextLevel = C.Levels[d.Level + 1]
   if nextLevel then card("Passer à " .. nextLevel.Name, nextLevel.Cost .. " $ • " .. nextLevel.Sales .. " ventes cumulées requises", "Agrandir mon entreprise", function() fire("Upgrade") end) end
+  card("Réapprovisionnement automatique", "Dès la boutique : commande au prix normal quand le stock descend à 3. Dépense la caisse tant que cette option reste active.", d.AutoOrder and "Désactiver" or "Activer", function() fire("AutoOrder") end, d.AutoOrder)
+  card("Campagne de quartier", "100 $ • visibilité accrue pendant 120 s pour les clients disputés. Aucun revenu garanti.", "Lancer la campagne", function() fire("Marketing") end)
   textRow("Identité de marque • personnalisation gratuite", 44)
   for i in ipairs(C.Palette) do local r = row(42) button(r, "Palette " .. i .. (d.Color == i and " ✓" or ""), UDim2.new(1, -12, 0, 34), UDim2.fromOffset(6, 4), function() fire("Color", i) end, C.Palette[i]) end
   textRow("Sur la place au nord : accompagne le client VIP jusqu'à ton comptoir pour une vente x3. Tu marches plus lentement et il faut du stock. Entrer dans une voiture abandonne le VIP.", 100)
   local r = row(42) button(r, "Relâcher le VIP", UDim2.new(1, -12, 0, 34), UDim2.fromOffset(6, 4), function() fire("Drop") end)
+ elseif currentTab == "Objectifs" then
+  local p = latest.Progression
+  if not p then return end
+  liveLabels.event = textRow("", 100)
+  card("Commande collective", "Pendant l'événement : contribue jusqu'à 5 produits demandés. Chaque produit est payé 150 % du prix de vente, immédiatement.", "Fournir jusqu'à 5 produits", function() fire("Contribute") end)
+  liveLabels.reputation = textRow("", 70)
+  liveLabels.board = textRow("", 155)
+  card("Calendrier sans pénalité", "Prochain cadeau : jour " .. p.GiftDay .. " / 7. Aucun acquis perdu. Renouvellement à minuit UTC.", p.GiftAvailable and "Recevoir mon cadeau" or "Cadeau reçu aujourd'hui ✓", function() fire("DailyGift") end)
+  textRow("Parcours entrepreneur • récompenses uniques", 42)
+  for _, m in ipairs(p.Missions) do
+   card(m.Name, m.Progress .. " / " .. m.Target .. " • récompense " .. m.Reward .. " $", m.Claimed and "Reçu ✓" or "Recevoir la récompense", function() fire("Mission", m.Id) end, m.Claimed)
+  end
+  textRow("Missions du jour • progression sauvegardée", 42)
+  for _, m in ipairs(p.Daily) do
+   card(m.Name, m.Progress .. " / " .. m.Target .. " • récompense " .. m.Reward .. " $", m.Claimed and "Reçu ✓" or "Recevoir la récompense", function() fire("DailyMission", m.Id) end, m.Claimed)
+  end
+  textRow("Hors ligne : le stock existant peut se vendre à moitié prix, une unité toutes les 2 minutes, sur 4 h maximum. Pas de production gratuite ni de réapprovisionnement hors ligne.", 90)
  else
   textRow("Tes achats personnels sont payés par la caisse de l'entreprise. Une réserve pour le prochain lot est conservée. Tout utilise des dollars fictifs du jeu.", 85)
   for i, car in ipairs(C.Vehicles) do
@@ -101,7 +131,10 @@ local function render()
   for i, item in ipairs(C.Luxuries) do card(item.Name, item.Cost .. " $ • entreprise niveau " .. item.Level .. " • décoration personnelle exposée", d.Luxuries[tostring(i)] and "Possédé ✓" or "Acheter avec la caisse", function() fire("Luxury", i) end, d.Luxuries[tostring(i)]) end
  end
 end
-for i, name in ipairs({"Marché", "Entreprise", "Lifestyle"}) do button(tabs, name, UDim2.new(1/3, -5, 1, 0), UDim2.new((i-1)/3, 0, 0, 0), function() currentTab = name render() end) end
+for i, name in ipairs({"Marché", "Entreprise", "Lifestyle", "Objectifs"}) do
+ local tab = button(tabs, name, UDim2.new(1/4, -5, 1, 0), UDim2.new((i-1)/4, 0, 0, 0), function() currentTab = name scroll.CanvasPosition = Vector2.zero render() end)
+ tab.TextScaled = true local limit = Instance.new("UITextSizeConstraint") limit.MinTextSize, limit.MaxTextSize, limit.Parent = 9, 14, tab
+end
 state.OnClientEvent:Connect(function(snapshot)
  local previous = latest latest = snapshot
  local d = snapshot.Data
@@ -109,13 +142,21 @@ state.OnClientEvent:Connect(function(snapshot)
  summary.Text = string.format("Stock %d • %d ventes • parcelle %d\nTendance : %s (%ds) • %s", d.Stock, d.Sales, snapshot.Plot, C.Products[snapshot.Trend].Name, snapshot.TrendSeconds, snapshot.Saving)
  local changed = not previous
  if previous then
-  for _, key in ipairs({"Product", "Supplier", "PriceMode", "Level", "Color", "Negotiated", "ActiveVehicle"}) do if previous.Data[key] ~= d[key] then changed = true end end
+  for _, key in ipairs({"Product", "Supplier", "PriceMode", "Level", "Color", "Negotiated", "ActiveVehicle", "AutoOrder", "DailyClaim"}) do if previous.Data[key] ~= d[key] then changed = true end end
+  if currentTab == "Objectifs" and (previous.Data.Sales ~= d.Sales or snapshot.Message or previous.Data.Daily.Day ~= d.Daily.Day) then changed = true end
   for key, value in pairs(d.Vehicles) do if previous.Data.Vehicles[key] ~= value then changed = true end end
   for key, value in pairs(d.Luxuries) do if previous.Data.Luxuries[key] ~= value then changed = true end end
  end
  if changed then render() end
  if liveLabels.guide then liveLabels.guide.Text = d.Sales == 0 and "01 / PREMIÈRE VENTE\nChoisis un produit, négocie, commande 10 unités. Les clients arrivent dès la livraison." or "Les affaires tournent ! Réapprovisionne, adapte ton prix et suis les tendances de la ville." end
- if liveLabels.order then liveLabels.order.Text = d.Order and ("Livraison dans " .. d.Order.Remaining .. " s…") or ("Commander 10 unités • " .. math.ceil(C.Products[d.Product].Cost * 10 * C.Suppliers[d.Supplier].Factor * (d.Negotiated and 0.9 or 1)) .. " $") end
+ if liveLabels.order then liveLabels.order.Text = d.Order and ("Livraison dans " .. d.Order.Remaining .. " s…") or ("Commander 10 unités • " .. math.ceil(C.Products[d.Product].Cost * 10 * C.Suppliers[d.Supplier].Factor * (d.Negotiated and (1 - (d.Discount or 0.1)) or 1)) .. " $") end
+ if liveLabels.event then local e = snapshot.Event liveLabels.event.Text = e.Kind .. " • " .. C.Products[e.Product].Name .. "\nFin dans " .. math.max(0, e.Ends - os.time()) .. " s • collectif " .. e.Units .. "/" .. e.Target .. "\nTouristes : +20 % ; tendance surprise : +30 % sur les ventes locales concernées." end
+ if liveLabels.reputation then liveLabels.reputation.Text = "Réputation : " .. snapshot.Progression.Reputation .. "/100 • clients disputés gagnés : " .. d.Disputed .. "\nPublicité restante : " .. snapshot.Progression.Marketing .. " s. Les clients privilégient tour à tour qualité, tendance ou prix." end
+ if liveLabels.board then
+  local lines = {"Part des clients disputés (joueurs présents, session) : " .. snapshot.MarketShare .. "%"}
+  for i, entry in ipairs(snapshot.Board) do table.insert(lines, i .. ". " .. entry.Name .. " • " .. entry.Wins .. " clients • " .. C.Levels[entry.Level].Name) end
+  liveLabels.board.Text = table.concat(lines, "\n")
+ end
  if liveLabels.progress then liveLabels.progress.Text = "Entreprise : " .. C.Levels[d.Level].Name .. "\n" .. d.Sales .. " ventes • chiffre d'affaires " .. d.Revenue .. " $\nLes achats personnels ne comptent pas comme investissement." end
  if snapshot.Message == "OPEN_MARKET" then currentTab = "Marché" panel.Visible = true render()
  elseif snapshot.Message then notice(snapshot.Message) end

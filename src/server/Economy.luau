@@ -7,7 +7,7 @@ function E.Price(d)
  return math.floor(C.Products[d.Product].Price * ({0.85, 1, 1.2})[d.PriceMode])
 end
 function E.OrderCost(d)
- return math.ceil(C.Products[d.Product].Cost * 10 * C.Suppliers[d.Supplier].Factor * (d.Negotiated and 0.9 or 1))
+ return math.ceil(C.Products[d.Product].Cost * 10 * C.Suppliers[d.Supplier].Factor * (d.Negotiated and (1 - (d.Discount or 0.1)) or 1))
 end
 function E.Action(d, action, value, now)
  if action == "Product" then
@@ -16,20 +16,24 @@ function E.Action(d, action, value, now)
   d.Product = value
  elseif action == "Supplier" then
   if not C.Suppliers[value] then return false, "Fournisseur invalide." end
-  d.Supplier, d.Negotiated = value, false
+  d.Supplier, d.Negotiated, d.Discount, d.Sample = value, false, nil, false
  elseif action == "Negotiate" then
   if d.Negotiated then return false, "Remise déjà obtenue pour le prochain lot." end
   if value ~= "Volume" and value ~= "Loyalty" and value ~= "Sample" then return false, "Offre invalide." end
+  local history = d.SupplierOrders and (d.SupplierOrders[tostring(d.Supplier)] or 0) or 0
+  if value == "Loyalty" and history < 3 then return false, "Ce fournisseur demande 3 commandes avant un accord de fidélité." end
+  d.Discount = value == "Loyalty" and 0.15 or value == "Sample" and 0 or 0.1
+  d.Sample = value == "Sample"
   d.Negotiated = true
-  return true, "Accord MarketBridge : −10 % sur le prochain lot de 10 !"
+  return true, value == "Sample" and "Contrôle qualité offert : +0,2 qualité sur le prochain lot, sans remise." or ("Accord MarketBridge : −" .. math.floor(d.Discount * 100) .. "% sur le prochain lot !")
  elseif action == "Order" then
   if d.Order then return false, "Une livraison est déjà en route." end
   if d.Stock > 40 then return false, "Stock presque plein : vends avant de recommander." end
   local cost = E.OrderCost(d)
   if d.Cash < cost then return false, "Trésorerie insuffisante pour ce lot." end
   d.Cash -= cost
-  d.Order = {Remaining = C.Suppliers[d.Supplier].Delay, Quality = C.Suppliers[d.Supplier].Quality}
-  d.Negotiated = false
+  d.Order = {Remaining = C.Suppliers[d.Supplier].Delay, Quality = C.Suppliers[d.Supplier].Quality + (d.Sample and 0.2 or 0)}
+  d.Negotiated, d.Discount, d.Sample = false, nil, false
   return true, "Commande payée. Livraison en route !"
  elseif action == "Price" then
   if value ~= 1 and value ~= 2 and value ~= 3 then return false, "Prix invalide." end

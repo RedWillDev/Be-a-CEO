@@ -96,7 +96,21 @@ function W.UpdatePlot(index, player, data)
  for _, x in ipairs({-19, 19}) do p("Wall", Vector3.new(1, 11, 29), x, 6, 2, cream) end
  p("Roof", Vector3.new(40, 1, 32), 0, 12, 2, dark)
  p("Counter", Vector3.new(18, 3, 3), 0, 2, 1, color)
- for x = -6, 6, 6 do p("Product", Vector3.new(3, 2, 2), x, 4.5, 1, C.Products[data and data.Product or 1].Color) end
+ for x = -6, 6, 6 do
+  local product = data and data.Product or 1
+  local productColor = C.Products[product].Color
+  if product == 1 then
+   p("ShoeSole", Vector3.new(2, 0.3, 3), x, 3.8, 1, cream)
+   p("ShoeUpper", Vector3.new(1.8, 0.9, 2.7), x, 4.4, 1, productColor)
+   p("ShoeHeel", Vector3.new(1.8, 0.8, 0.8), x, 5, 2, productColor)
+  elseif product == 2 then
+   for _, offset in ipairs({-1, 1}) do p("EarCup", Vector3.new(0.6, 1.8, 1), x + offset, 4.8, 1, productColor) end
+   p("Headband", Vector3.new(2.5, 0.4, 0.7), x, 5.8, 1, dark)
+  else
+   p("ToyBody", Vector3.new(1.3, 1.5, 1), x, 4.5, 1, productColor)
+   local head = p("ToyHead", Vector3.new(1.2, 1.2, 1.2), x, 5.8, 1, productColor) head.Shape = Enum.PartType.Ball
+  end
+ end
  for floor = 2, level do
   p("UpperFloor", Vector3.new(38, 9, 29), 0, 12 + (floor - 1) * 9 - 4, 2, dark)
   p("Accent", Vector3.new(40, 0.7, 31), 0, 12 + (floor - 1) * 9, 2, color)
@@ -141,6 +155,37 @@ function W.ApplyPersonal(player, data)
  local watch = W.Part(character, "CEOWatch", Vector3.new(0.55, 0.25, 0.6), hand.CFrame * CFrame.new(0, 0.15, -0.4), Color3.fromRGB(238, 194, 91), Enum.Material.Metal)
  watch.Anchored, watch.CanCollide, watch.Massless = false, false, true
  local weld = Instance.new("WeldConstraint") weld.Part0, weld.Part1, weld.Parent = hand, watch, watch
+end
+function W.CityEvent(event)
+ if W.EventModel then W.EventModel:Destroy() end
+ local m = Instance.new("Model") m.Name, m.Parent = "CityEvent", W.City W.EventModel = m
+ local color = C.Products[event.Product].Color
+ W.Sign(m, event.Kind .. "\n" .. C.Products[event.Product].Name, CFrame.new(0, 27, -109) * CFrame.Angles(0, math.pi, 0), Vector3.new(36, 5, 0.6), color)
+ if event.Kind == "Bus de touristes" then
+  local cf = CFrame.new(0, 24, -14) * CFrame.Angles(0, math.pi / 2, 0)
+  W.Part(m, "TourBus", Vector3.new(9, 7, 24), cf, color)
+  for z = -8, 8, 4 do
+   for _, x in ipairs({-4.55, 4.55}) do W.Part(m, "BusWindow", Vector3.new(0.2, 2.8, 3), cf * CFrame.new(x, 1, z), dark) end
+  end
+  for _, z in ipairs({-8, 8}) do
+   for _, x in ipairs({-4.6, 4.6}) do
+    local wheel = W.Part(m, "BusWheel", Vector3.new(1, 3, 3), cf * CFrame.new(x, -2.5, z), dark)
+    wheel.Shape = Enum.PartType.Cylinder
+   end
+  end
+  for i = 1, 6 do W.Person(m, "Touriste", CFrame.new(-12 + i * 3, 21, -30), C.Palette[(i - 1) % 4 + 1]) end
+ elseif event.Kind == "Commande collective" then
+  for i = 1, 6 do W.Part(m, "Cargo", Vector3.new(3, 3, 3), CFrame.new(-10 + i * 3, 22.5, -117), Color3.fromRGB(177, 127, 76), Enum.Material.Wood) end
+ end
+end
+function W.Delivery(index)
+ local m = Instance.new("Model") m.Name, m.Parent = "Delivery", W.City
+ local cf = W.Plots[index].CF * CFrame.new(-25, 2, -12)
+ W.Part(m, "VanBody", Vector3.new(7, 5, 12), cf * CFrame.new(0, 1, 0), cream)
+ W.Part(m, "VanCab", Vector3.new(7, 3, 4), cf * CFrame.new(0, 0, -8), C.Palette[1])
+ W.Sign(m, "MARKETBRIDGE", cf * CFrame.new(0, 2, -10.1), Vector3.new(6, 1.5, 0.2))
+ for x = -1, 1 do W.Part(m, "Parcel", Vector3.new(2, 2, 2), cf * CFrame.new(x * 3, -0.5, 9), Color3.fromRGB(177, 127, 76)) end
+ task.delay(5, function() m:Destroy() end)
 end
 function W.Car(index, tier, player)
  local plot = W.Plots[index]
