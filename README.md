@@ -4,7 +4,7 @@ Un jeu Roblox multijoueur : du garage à ta propre tour, crée ta marque et riva
 
 ## État du projet
 
-Le concept est validé et le dépôt contient maintenant le socle Rojo relié au lieu Roblox du projet. Le prototype jouable reste à construire.
+Le premier prototype jouable est implémenté : ville de huit parcelles, commandes MarketBridge, ventes, bâtiments évolutifs, client VIP, achats personnels et véhicules liés au niveau de l'entreprise. Voir [le guide de test et les limites actuelles](docs/prototype-playtest.md). Les essais multijoueurs, mobiles et de sauvegarde en serveur publié restent nécessaires avant le lancement.
 
 ## Document de conception
 
@@ -17,7 +17,7 @@ Lire [le document de conception complet](docs/roblox-tycoon-entrepreneur.md) pou
 - Choix de produit, fournisseur, commande et première vente.
 - Première amélioration visible de la boutique.
 - Clients locaux puis clients disputés et événement de portage sur la place.
-- Interface mobile et sauvegarde fiable.
+- Interface adaptable et sauvegarde serveur implémentées, encore à valider sur mobile et en conditions réelles.
 
 Les systèmes avancés (alliances, espionnage, saisons) viennent après validation de cette boucle.
 
@@ -50,10 +50,10 @@ La configuration conserve les instances inconnues : la baseplate, le point d'app
 
 ## Prochaines étapes
 
-1. Construire la ville et la première boucle de vente.
-2. Ajouter l'attribution des garages et la progression visible.
-3. Vérifier les sauvegardes, les reconnexions et le jeu à plusieurs dans Studio.
-4. Tester l'interface sur mobile avant d'ajouter les systèmes avancés.
+1. Tester la concurrence et les huit parcelles avec plusieurs joueurs dans Studio.
+2. Vérifier les sauvegardes et les reconnexions sur un serveur de test publié.
+3. Tester l'interface et la conduite sur mobile.
+4. Affiner l'équilibrage et les graphismes avant d'ajouter les systèmes avancés.
 
 ## Références
 
