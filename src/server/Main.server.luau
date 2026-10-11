@@ -6,6 +6,8 @@ local shared = game.ReplicatedStorage.BeACEO
 local C = require(shared.Config)
 local E = require(script.Parent.Economy)
 local P = require(script.Parent.Progression)
+local Staff = require(script.Parent.Staff)
+local Logistics = require(script.Parent.Logistics)
 local W = require(script.Parent.World)
 local remote = Instance.new("RemoteEvent") remote.Name = "Command" remote.Parent = shared
 local stateRemote = Instance.new("RemoteEvent") stateRemote.Name = "State" stateRemote.Parent = shared
@@ -16,6 +18,7 @@ local lockId = game.JobId .. ":" .. game:GetService("HttpService"):GenerateGUID(
 local trend, nextTrend, vip, carrier = 1, os.clock() + 90, nil, nil
 local cityEvent = {Kind = "Préparation", Product = 1, Ends = os.time() + 60, Units = 0, Target = 30}
 local eventNumber = 0
+local logistics
 W.Build()
 W.CityEvent(cityEvent)
 local function send(player, message)
@@ -29,8 +32,14 @@ local function send(player, message)
   end
  end
  table.sort(board, function(a, b) if a.Wins == b.Wins then return a.Name < b.Name end return a.Wins > b.Wins end)
- stateRemote:FireClient(player, {Data = s.Data, Board = board, MarketShare = total > 0 and math.floor((s.SessionDisputed or 0) / total * 100) or 0, Progression = P.View(s.Data, os.time()), Event = cityEvent, Plot = s.Plot, Trend = trend, TrendSeconds = math.max(0, math.ceil(nextTrend - os.clock())), Message = message, Saving = s.Status, Carrying = carrier == player})
+ stateRemote:FireClient(player, {Data = s.Data, StaffRoles = Staff.Roles, Waiting = s.Waiting ~= nil, Board = board, MarketShare = total > 0 and math.floor((s.SessionDisputed or 0) / total * 100) or 0, Progression = P.View(s.Data, os.time()), Event = cityEvent, Plot = s.Plot, Trend = trend, TrendSeconds = math.max(0, math.ceil(nextTrend - os.clock())), Message = message, Saving = s.Status, Carrying = carrier == player or (logistics and logistics:Busy(player))})
 end
+local function valid(player)
+ local s = sessions[player]
+ return s and s.Ready and not s.Closing and (studio or os.time() - s.LastSaved <= 110)
+end
+logistics = Logistics.Start(sessions, W, E, P, send, valid, function(player) return carrier == player end)
+W.OnTourist = function(model) logistics:AddTourist(model) end
 local function save(player, release)
  local s = sessions[player]
  if not s or not store then return true end
@@ -84,6 +93,7 @@ local function join(player)
  end
  if player.Parent ~= Players then save(player, true) sessions[player] = nil return end
  P.Init(s.Data, os.time())
+ Staff.Init(s.Data)
  s.Ready = true
  W.UpdatePlot(index, player, s.Data)
  player.CharacterAdded:Connect(function(char) arrive(player, char) end)
@@ -102,6 +112,8 @@ Players.PlayerRemoving:Connect(function(player)
  local s = sessions[player]
  if not s then return end
  if carrier == player then dropVIP() end
+ logistics:Remove(player)
+ if s.WaitingModel then s.WaitingModel:Destroy() end
  if cars[player] then cars[player].Model:Destroy() cars[player] = nil end
  if s.Ready then s.Ready = false save(player, true) end
  sessions[player] = nil W.UpdatePlot(s.Plot, nil, nil)
@@ -121,10 +133,27 @@ remote.OnServerEvent:Connect(function(player, action, value)
  if value ~= nil and type(value) ~= "number" and type(value) ~= "string" then return end
  if type(value) == "number" and (value ~= value or value % 1 ~= 0 or math.abs(value) > 10) then return end
  if action == "Home" then
+  if logistics:Busy(player) or carrier == player then send(player, "Dépose ce que tu portes avant de rentrer.") return end
   if player.Character then local hum = player.Character:FindFirstChildOfClass("Humanoid") if hum and hum.SeatPart then send(player, "Descends du véhicule avant de rentrer.") return end arrive(player, player.Character) end
   return
  end
- if action == "Drop" then if carrier == player then dropVIP() end return end
+ if action == "Drop" then if carrier == player then dropVIP() end logistics:Drop(player) return end
+ if action == "Hire" then
+  local ok, message = Staff.Hire(s.Data, value, E.OrderCost(s.Data))
+  if ok then W.UpdatePlot(s.Plot, player, s.Data) end
+  send(player, message) return
+ end
+ if action == "Manager" then
+  if s.Data.Staff.Manager < 1 then send(player, "Recrute d'abord un gérant (niveau 4).") return end
+  s.Data.ManagerEnabled = not s.Data.ManagerEnabled
+  send(player, s.Data.ManagerEnabled and "Gérant actif : recrutement et formation, réserve de deux lots préservée." or "Gestion automatique suspendue.") return
+ end
+ if action == "Rivalry" then
+  if not studio then send(player, "Le vol de colis reste désactivé hors Studio en attendant les tests de sauvegarde croisée.") return end
+  if s.Data.Level < 2 or s.Data.Parcel or s.Data.Order then send(player, "Niveau 2 requis, sans livraison en cours.") return end
+  s.Data.Rivalry = not s.Data.Rivalry send(player, s.Data.Rivalry and "Vol de colis activé entre volontaires. Assurance : 50 %." or "Colis protégés.") return
+ end
+ if action == "AutoOrder" and s.Data.Staff.Buyer < 1 then send(player, "Recrute un responsable commandes pour automatiser les achats.") return end
  if action == "Vehicle" and cars[player] and cars[player].Seat.Occupant then send(player, "Descends du véhicule avant de le remplacer.") return end
  if action == "Contribute" then
   local d = s.Data
@@ -161,6 +190,15 @@ local function customer(s, amount, disputed)
  task.delay(4, function() connection:Disconnect() value:Destroy() npc:Destroy() end)
 end
 local seconds = 0
+W.OnCashier = function(player, index)
+ local s = sessions[player] local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+ if not valid(player) or not root or s.Plot ~= index or (root.Position - (W.Plots[index].CF * CFrame.new(0, 2, 0)).Position).Magnitude > 12 then return end
+ if not s.Waiting then send(player, "Aucun client à encaisser pour l'instant.") return end
+ local amount = E.Sale(s.Data, s.Waiting)
+ s.Waiting = nil if s.WaitingModel then s.WaitingModel:Destroy() s.WaitingModel = nil end
+ if amount > 0 then P.OnSale(s.Data, "Local", os.time()) customer(s, amount, false) end
+ send(player, amount > 0 and ("Client encaissé : +" .. amount .. " $ !") or "Plus de stock.")
+end
 task.spawn(function()
  while true do
   task.wait(1) seconds += 1
@@ -178,7 +216,7 @@ task.spawn(function()
    local prompt = Instance.new("ProximityPrompt") prompt.ActionText, prompt.ObjectText, prompt.HoldDuration = "Accompagner", "Client VIP • vente x3", 0.5 prompt.MaxActivationDistance, prompt.RequiresLineOfSight, prompt.Parent = 10, false, vip.PrimaryPart
    prompt.Triggered:Connect(function(player)
     local s = sessions[player] local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-    if not vip or carrier or not s or not s.Ready or (not studio and os.time() - s.LastSaved > 110) or not root or (root.Position - vip.PrimaryPart.Position).Magnitude > 12 then return end
+    if not vip or carrier or logistics:Busy(player) or not s or not s.Ready or (not studio and os.time() - s.LastSaved > 110) or not root or (root.Position - vip.PrimaryPart.Position).Magnitude > 12 then return end
     if s.Data.Stock < 1 then send(player, "Il te faut du stock pour accueillir ce client.") return end
     carrier = player prompt.Enabled = false
     player.Character.Humanoid.WalkSpeed = 11
@@ -203,25 +241,35 @@ task.spawn(function()
    if not studio and now - s.LastSaved > 110 then send(player, "Économie en pause : reconnexion à la sauvegarde en cours.") continue end
    local d = s.Data
    P.Init(d, now)
+   Staff.Init(d)
    if d.Order then
     d.Order.Remaining -= 1
-    if d.Order.Remaining <= 0 then d.Quality = (d.Stock * d.Quality + 10 * d.Order.Quality) / (d.Stock + 10) d.Stock += 10 d.Order = nil W.Delivery(s.Plot) send(player, "Livraison reçue : 10 produits prêts à vendre !") end
+    if d.Order.Remaining <= 0 then d.Parcel = {Units = 10, Quality = d.Order.Quality, Product = d.Order.Product or d.Product, Paid = d.Order.Paid or 0} d.Order = nil W.Delivery(s.Plot) send(player, "Colis devant la porte ! Porte-le jusqu'à ton comptoir pour remplir le stock.") end
    end
    local interval = d.PriceMode == 3 and 7 or d.PriceMode == 1 and 3 or 5
+   interval = math.max(2, interval - math.max(0, d.Staff.Cashier - 1))
    if seconds % interval == 0 and d.Stock > 0 then
     local bonus = cityEvent.Kind == "Tendance surprise" and d.Product == cityEvent.Product and 1.3 or 1
-    local amount = E.Sale(d, bonus) P.OnSale(d, "Local", now) customer(s, amount, false)
+    if d.Staff.Cashier > 0 then
+     local amount = E.Sale(d, bonus) P.OnSale(d, "Local", now) customer(s, amount, false)
+     s.Waiting = nil if s.WaitingModel then s.WaitingModel:Destroy() s.WaitingModel = nil end
+    elseif not s.Waiting then
+     s.Waiting = bonus s.WaitingModel = W.Person(W.City, "ClientEnAttente", W.Plots[s.Plot].CF * CFrame.new(0, 0, -5), C.Palette[3])
+     send(player, "Un client attend : approche du comptoir pour l'encaisser.")
+    end
    end
    if cityEvent.Kind == "Bus de touristes" and seconds % 3 == 0 and d.Product == cityEvent.Product and d.Stock > 0 then
     local amount = E.Sale(d, 1.2) P.OnSale(d, "Touriste", now) customer(s, amount, true)
    end
-   if d.AutoOrder and d.Stock <= 3 and not d.Order then
+   if d.AutoOrder and d.Staff.Buyer > 0 and d.Stock <= 2 + d.Staff.Buyer and not d.Order and not d.Parcel then
     local ok = E.Action(d, "Order")
     if ok then P.OnOrder(d, now) end
    end
+   if seconds % 20 == 0 and Staff.Manage(d, E.OrderCost(d)) then W.UpdatePlot(s.Plot, player, d) send(player, "Ton gérant a recruté ou formé un employé.") end
    if player:FindFirstChild("leaderstats") then player.leaderstats.Ventes.Value = d.Sales player.leaderstats.Entreprise.Value = d.Level end
    send(player)
   end
+  logistics:Tick()
   -- One contested customer per server cycle, scored by product, quality and price.
   if seconds % 9 == 0 then
    local winner, score

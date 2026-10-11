@@ -96,6 +96,19 @@ function W.UpdatePlot(index, player, data)
  for _, x in ipairs({-19, 19}) do p("Wall", Vector3.new(1, 11, 29), x, 6, 2, cream) end
  p("Roof", Vector3.new(40, 1, 32), 0, 12, 2, dark)
  p("Counter", Vector3.new(18, 3, 3), 0, 2, 1, color)
+ local register = p("CashRegister", Vector3.new(2, 1, 2), 5, 4, 1, dark)
+ local checkout = Instance.new("ProximityPrompt")
+ checkout.ActionText, checkout.ObjectText, checkout.HoldDuration = "Encaisser", "Caisse", 0.4
+ checkout.MaxActivationDistance, checkout.RequiresLineOfSight, checkout.Parent = 10, false, register
+ checkout.Triggered:Connect(function(ply) if W.OnCashier then W.OnCashier(ply, index) end end)
+ if data and data.Staff then
+  local roles = {"Cashier", "Receiver", "Buyer", "Manager"}
+  for i, role in ipairs(roles) do
+   if (data.Staff[role] or 0) > 0 then
+    W.Person(m, role, cf * CFrame.new(-14 + i * 6, 0, 8), C.Palette[i])
+   end
+  end
+ end
  for x = -6, 6, 6 do
   local product = data and data.Product or 1
   local productColor = C.Products[product].Color
@@ -173,7 +186,10 @@ function W.CityEvent(event)
     wheel.Shape = Enum.PartType.Cylinder
    end
   end
-  for i = 1, 6 do W.Person(m, "Touriste", CFrame.new(-12 + i * 3, 21, -30), C.Palette[(i - 1) % 4 + 1]) end
+  for i = 1, 6 do
+   local tourist = W.Person(m, "Touriste", CFrame.new(-12 + i * 3, 21, -30), C.Palette[(i - 1) % 4 + 1])
+   if W.OnTourist then W.OnTourist(tourist) end
+  end
  elseif event.Kind == "Commande collective" then
   for i = 1, 6 do W.Part(m, "Cargo", Vector3.new(3, 3, 3), CFrame.new(-10 + i * 3, 22.5, -117), Color3.fromRGB(177, 127, 76), Enum.Material.Wood) end
  end

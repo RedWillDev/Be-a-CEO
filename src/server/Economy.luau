@@ -11,7 +11,7 @@ function E.OrderCost(d)
 end
 function E.Action(d, action, value, now)
  if action == "Product" then
-  if d.Stock > 0 or d.Order then return false, "Vends le stock actuel avant de changer de produit." end
+  if d.Stock > 0 or d.Order or d.Parcel then return false, "Vends et réceptionne le stock actuel avant de changer de produit." end
   if not C.Products[value] then return false, "Produit invalide." end
   d.Product = value
  elseif action == "Supplier" then
@@ -27,12 +27,12 @@ function E.Action(d, action, value, now)
   d.Negotiated = true
   return true, value == "Sample" and "Contrôle qualité offert : +0,2 qualité sur le prochain lot, sans remise." or ("Accord MarketBridge : −" .. math.floor(d.Discount * 100) .. "% sur le prochain lot !")
  elseif action == "Order" then
-  if d.Order then return false, "Une livraison est déjà en route." end
+  if d.Order or d.Parcel then return false, "Une livraison est déjà en route ou attend devant la porte." end
   if d.Stock > 40 then return false, "Stock presque plein : vends avant de recommander." end
   local cost = E.OrderCost(d)
   if d.Cash < cost then return false, "Trésorerie insuffisante pour ce lot." end
   d.Cash -= cost
-  d.Order = {Remaining = C.Suppliers[d.Supplier].Delay, Quality = C.Suppliers[d.Supplier].Quality + (d.Sample and 0.2 or 0)}
+  d.Order = {Remaining = C.Suppliers[d.Supplier].Delay, Quality = C.Suppliers[d.Supplier].Quality + (d.Sample and 0.2 or 0), Product = d.Product, Paid = cost}
   d.Negotiated, d.Discount, d.Sample = false, nil, false
   return true, "Commande payée. Livraison en route !"
  elseif action == "Price" then

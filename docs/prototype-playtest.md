@@ -5,14 +5,17 @@
 1. Lancer `scripts/serve.ps1`, connecter le plugin Rojo à `localhost:34872`.
 2. Dans le lieu Be-a-CEO, lancer **Jouer / F5**. La ville est générée au démarrage du serveur ; elle n'apparaît pas encore en mode édition.
 3. Le joueur reçoit un garage et 500 dollars fictifs. Dans **Marché**, commander 10 unités (ou comparer les trois produits et les trois fournisseurs).
-4. Attendre la livraison de 7 à 15 secondes. Les clients locaux achètent automatiquement ; un client disputé du serveur compare qualité, prix et tendance toutes les 9 secondes.
+4. Attendre la livraison de 7 à 15 secondes. Prendre le colis devant la porte et le porter au comptoir. Utiliser **Encaisser** à la caisse lorsqu'un client local attend ; un caissier recruté automatise ensuite ce service. Les ventes spéciales restent des bonus directs.
 5. Réapprovisionner, adapter le prix et acheter une amélioration dans **Entreprise**. Les paliers exigent du cash et des ventes cumulées.
 6. Dans **Lifestyle**, acheter une voiture ou un objet personnel avec la même caisse. Le jeu conserve le prix d'un prochain lot en réserve.
 7. Monter sur le siège de sa voiture pour conduire avec les contrôles Roblox ; sauter pour descendre. Les véhicules sont réservés à leur propriétaire.
 8. Sur la place au nord, accompagner le VIP jusqu'à son entreprise avec du stock : une vente x3. Le porteur ralentit ; la mort, le départ ou la conduite annulent le transport.
 9. Dans **Objectifs**, récupérer les récompenses du parcours, le cadeau du calendrier et les trois missions quotidiennes. La progression des objectifs est sauvegardée hors Studio.
 10. Participer aux événements : bus (+20 % sur ses achats), commande collective (jusqu'à 5 unités par contribution, payées x1,5), tendance surprise (+30 % sur les ventes locales du produit demandé).
-11. Dès la boutique, activer si souhaité le réapprovisionnement automatique. Il dépense la caisse au prix du lot sélectionné lorsque le stock atteint 3, sans frais supplémentaires.
+11. Dans **Entreprise**, recruter et former les employés. Dès la boutique, recruter un responsable commandes puis activer si souhaité le réapprovisionnement automatique. Il dépense la caisse au prix du lot sélectionné, seuil de stock de 3 à 5 selon son niveau.
+12. Pendant le bus, porter un vacancier jusqu'à son comptoir pour une vente x2. Un seul colis ou client peut être porté à la fois.
+
+Voir [l'audit détaillé de la V1](v1-audit.md) : états de validation, employés, réception et restrictions du vol expérimental.
 
 ## Contenu implémenté
 

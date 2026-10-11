@@ -89,7 +89,7 @@ local function render()
   card("Contrôle qualité", "Renonce à la remise pour gagner +0,2 de qualité sur le prochain lot.", "Choisir la qualité", function() fire("Negotiate", "Sample") end)
   local r = row(52)
   button(r, "Commander le lot sélectionné", UDim2.new(1, -20, 0, 36), UDim2.fromOffset(10, 8), function() fire("Order") end, Color3.fromRGB(31, 112, 94))
-  textRow("Les clients achètent automatiquement le stock. Le prix économique vend plus vite ; le premium vend plus lentement. La qualité et la tendance attirent les clients disputés.", 78)
+  textRow("Au départ : porte les colis de la porte au comptoir, puis utilise la caisse pour servir les clients locaux. Les employés automatisent ces tâches. Prix, qualité et tendance attirent les clients.", 88)
   for i, name in ipairs({"Économique • ventes rapides", "Équilibré • prix conseillé", "Premium • marge élevée"}) do
    local r2 = row(42) button(r2, (d.PriceMode == i and "✓ " or "") .. name, UDim2.new(1, -12, 0, 34), UDim2.fromOffset(6, 4), function() fire("Price", i) end)
   end
@@ -98,12 +98,21 @@ local function render()
   liveLabels.progress = textRow("", 75)
   local nextLevel = C.Levels[d.Level + 1]
   if nextLevel then card("Passer à " .. nextLevel.Name, nextLevel.Cost .. " $ • " .. nextLevel.Sales .. " ventes cumulées requises", "Agrandir mon entreprise", function() fire("Upgrade") end) end
-  card("Réapprovisionnement automatique", "Dès la boutique : commande au prix normal quand le stock descend à 3. Dépense la caisse tant que cette option reste active.", d.AutoOrder and "Désactiver" or "Activer", function() fire("AutoOrder") end, d.AutoOrder)
+  textRow("Équipe • recrutement et formations payés une fois, sans salaire récurrent pour cette version. Trois niveaux par poste.", 70)
+  for i, role in ipairs(latest.StaffRoles or {}) do
+   local rank = d.Staff and d.Staff[role.Key] or 0
+   local effects = {"Encaisse les clients locaux ; accélère aux niveaux 2 et 3.", "Range les colis après 12 / 8 / 4 secondes.", "Commande quand le stock descend à 3 / 4 / 5 produits.", "Recrute et forme les 3 autres postes jusqu'à son propre niveau."}
+   card(role.Name .. " • niveau " .. rank .. "/3", "Entreprise " .. role.Level .. " • " .. effects[i], rank == 3 and "Niveau maximum" or ((rank == 0 and "Recruter : " or "Former : ") .. role.Cost * (rank + 1) .. " $"), function() fire("Hire", i) end, rank > 0)
+  end
+  card("Réapprovisionnement automatique", "Responsable commandes requis. Dépense la caisse au prix normal du lot tant que cette option reste active.", d.AutoOrder and "Désactiver" or "Activer", function() fire("AutoOrder") end, d.AutoOrder)
+  card("Déléguer au gérant", "Sur accord : recrute et améliore l'équipe toutes les 20 s. Préserve deux lots de marchandises. N'achète jamais de bâtiment ni de luxe.", d.ManagerEnabled and "Suspendre le gérant" or "Autoriser la gestion", function() fire("Manager") end, d.ManagerEnabled)
+  card("Rivalité de livraison • test Studio", "Vol entre volontaires niveau 2+. Colis protégé 20 s ; assurance de 50 % en cas de perte. Désactivé sur les serveurs publiés.", d.Rivalry and "Désactiver la rivalité" or "Participer à la rivalité", function() fire("Rivalry") end, d.Rivalry)
   card("Campagne de quartier", "100 $ • visibilité accrue pendant 120 s pour les clients disputés. Aucun revenu garanti.", "Lancer la campagne", function() fire("Marketing") end)
   textRow("Identité de marque • personnalisation gratuite", 44)
   for i in ipairs(C.Palette) do local r = row(42) button(r, "Palette " .. i .. (d.Color == i and " ✓" or ""), UDim2.new(1, -12, 0, 34), UDim2.fromOffset(6, 4), function() fire("Color", i) end, C.Palette[i]) end
   textRow("Sur la place au nord : accompagne le client VIP jusqu'à ton comptoir pour une vente x3. Tu marches plus lentement et il faut du stock. Entrer dans une voiture abandonne le VIP.", 100)
-  local r = row(42) button(r, "Relâcher le VIP", UDim2.new(1, -12, 0, 34), UDim2.fromOffset(6, 4), function() fire("Drop") end)
+  textRow("Vacanciers : pendant le bus, accompagne un touriste à ta boutique pour une vente x2. Un seul colis ou client porté à la fois. Voiture, mort ou téléportation interrompent le portage.", 95)
+  local r = row(42) button(r, "Déposer le colis ou le client", UDim2.new(1, -12, 0, 34), UDim2.fromOffset(6, 4), function() fire("Drop") end)
  elseif currentTab == "Objectifs" then
   local p = latest.Progression
   if not p then return end
@@ -142,14 +151,17 @@ state.OnClientEvent:Connect(function(snapshot)
  summary.Text = string.format("Stock %d • %d ventes • parcelle %d\nTendance : %s (%ds) • %s", d.Stock, d.Sales, snapshot.Plot, C.Products[snapshot.Trend].Name, snapshot.TrendSeconds, snapshot.Saving)
  local changed = not previous
  if previous then
-  for _, key in ipairs({"Product", "Supplier", "PriceMode", "Level", "Color", "Negotiated", "ActiveVehicle", "AutoOrder", "DailyClaim"}) do if previous.Data[key] ~= d[key] then changed = true end end
+  for _, key in ipairs({"Product", "Supplier", "PriceMode", "Level", "Color", "Negotiated", "ActiveVehicle", "AutoOrder", "DailyClaim", "ManagerEnabled", "Rivalry"}) do if previous.Data[key] ~= d[key] then changed = true end end
+  for key, rank in pairs(d.Staff or {}) do if not previous.Data.Staff or previous.Data.Staff[key] ~= rank then changed = true end end
   if currentTab == "Objectifs" and (previous.Data.Sales ~= d.Sales or snapshot.Message or previous.Data.Daily.Day ~= d.Daily.Day) then changed = true end
   for key, value in pairs(d.Vehicles) do if previous.Data.Vehicles[key] ~= value then changed = true end end
   for key, value in pairs(d.Luxuries) do if previous.Data.Luxuries[key] ~= value then changed = true end end
  end
  if changed then render() end
- if liveLabels.guide then liveLabels.guide.Text = d.Sales == 0 and "01 / PREMIÈRE VENTE\nChoisis un produit, négocie, commande 10 unités. Les clients arrivent dès la livraison." or "Les affaires tournent ! Réapprovisionne, adapte ton prix et suis les tendances de la ville." end
- if liveLabels.order then liveLabels.order.Text = d.Order and ("Livraison dans " .. d.Order.Remaining .. " s…") or ("Commander 10 unités • " .. math.ceil(C.Products[d.Product].Cost * 10 * C.Suppliers[d.Supplier].Factor * (d.Negotiated and (1 - (d.Discount or 0.1)) or 1)) .. " $") end
+ if liveLabels.guide then
+  liveLabels.guide.Text = d.Parcel and "02 / RÉCEPTION\nPrends le colis devant ta porte et porte-le jusqu'au comptoir." or snapshot.Waiting and "03 / PREMIÈRE VENTE\nUn client attend : approche de la caisse et utilise Encaisser." or d.Sales == 0 and "01 / COMMANDER\nChoisis ton produit, négocie puis commande 10 unités." or "04 / DÉVELOPPER\nRecrute ton équipe dans Entreprise et récupère tes récompenses dans Objectifs."
+ end
+ if liveLabels.order then liveLabels.order.Text = d.Parcel and "Colis devant la porte • à réceptionner" or d.Order and ("Livraison dans " .. d.Order.Remaining .. " s…") or ("Commander 10 unités • " .. math.ceil(C.Products[d.Product].Cost * 10 * C.Suppliers[d.Supplier].Factor * (d.Negotiated and (1 - (d.Discount or 0.1)) or 1)) .. " $") end
  if liveLabels.event then local e = snapshot.Event liveLabels.event.Text = e.Kind .. " • " .. C.Products[e.Product].Name .. "\nFin dans " .. math.max(0, e.Ends - os.time()) .. " s • collectif " .. e.Units .. "/" .. e.Target .. "\nTouristes : +20 % ; tendance surprise : +30 % sur les ventes locales concernées." end
  if liveLabels.reputation then liveLabels.reputation.Text = "Réputation : " .. snapshot.Progression.Reputation .. "/100 • clients disputés gagnés : " .. d.Disputed .. "\nPublicité restante : " .. snapshot.Progression.Marketing .. " s. Les clients privilégient tour à tour qualité, tendance ou prix." end
  if liveLabels.board then

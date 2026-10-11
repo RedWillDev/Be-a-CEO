@@ -8,6 +8,8 @@ Le premier prototype jouable est implémenté : ville de huit parcelles, command
 
 La deuxième itération ajoute les objectifs permanents et quotidiens, le calendrier de cadeaux, trois accords fournisseurs, les événements de ville, les contributions collectives, la réputation, la publicité, le réapprovisionnement automatique et les ventes hors ligne plafonnées. Deux suites de tests isolés valident 69 assertions dans Studio. Ce n'est pas encore une version commerciale complète.
 
+La gestion comprend désormais la réception physique des colis, la caisse manuelle des clients locaux, quatre postes améliorables et le portage des vacanciers. Le vol de colis est expérimental et volontaire, uniquement dans Studio. Lire [l'audit V1](docs/v1-audit.md) avant toute publication.
+
 ## Document de conception
 
 Lire [le document de conception complet](docs/roblox-tycoon-entrepreneur.md) pour les décisions de gameplay, la ville, la concurrence, la progression, la monétisation et la feuille de route.
