@@ -1,5 +1,37 @@
 local C = require(game.ReplicatedStorage.BeACEO.Config)
+local Characters = require(script.Parent.Characters)
+local VehicleArt = require(script.Parent.VehicleArt)
+local TweenService = game:GetService("TweenService")
 local W = {Plots = {}}
+local walkers = {}
+local walkClock = 0
+game:GetService("RunService").Heartbeat:Connect(function(dt)
+ walkClock += dt if walkClock < 0.1 then return end
+ local step = math.min(walkClock, 0.2) walkClock = 0
+ for model, route in pairs(walkers) do
+  if not model.Parent then walkers[model] = nil continue end
+  if model:GetAttribute("Carried") then continue end
+  local cf = model:GetPivot() local goal = route.Points[route.Index]
+  local delta = goal - cf.Position
+  if delta.Magnitude < 0.4 then
+   route.Wait -= step
+   if route.Wait <= 0 then route.Index = route.Index % #route.Points + 1 route.Wait = route.Pause end
+  else
+   local nextPosition = cf.Position + delta.Unit * math.min(delta.Magnitude, route.Speed * step)
+   model:PivotTo(CFrame.lookAt(nextPosition, nextPosition + Vector3.new(delta.X, 0, delta.Z)))
+  end
+ end
+end)
+function W.Wander(model, points, speed, pause)
+ walkers[model] = {Points = points, Speed = speed or 5, Pause = pause or 2, Wait = pause or 2, Index = 1}
+end
+function W.MoveVehicle(model, destination, duration, finished)
+ local value = Instance.new("CFrameValue") value.Value = model:GetPivot()
+ local changed = value.Changed:Connect(function(cf) if model.Parent then model:PivotTo(cf) end end)
+ local tween = TweenService:Create(value, TweenInfo.new(duration, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Value = destination})
+ tween.Completed:Once(function() changed:Disconnect() value:Destroy() if model.Parent and finished then finished() end end)
+ tween:Play()
+end
 local dark = Color3.fromRGB(29, 40, 53)
 local cream = Color3.fromRGB(224, 223, 210)
 function W.Part(parent, name, size, cf, color, material)
@@ -24,20 +56,13 @@ function W.Sign(parent, text, cf, size, color)
  return p
 end
 function W.Person(parent, name, cf, color)
- local m = Instance.new("Model")
- m.Name = name
- local body = W.Part(m, "Body", Vector3.new(2, 2.5, 1), cf * CFrame.new(0, 3, 0), color)
- W.Part(m, "Head", Vector3.new(1.5, 1.5, 1.5), cf * CFrame.new(0, 5, 0), Color3.fromRGB(224, 178, 139))
- for _, x in ipairs({-0.55, 0.55}) do W.Part(m, "Leg", Vector3.new(0.8, 1.8, 0.9), cf * CFrame.new(x, 1, 0), dark) end
- m.PrimaryPart = body
- for _, p in ipairs(m:GetChildren()) do if p:IsA("BasePart") then p.CanCollide = false end end
- m.Parent = parent
- return m
+ return Characters.Create(parent, name, cf, color)
 end
 function W.Build()
  local existing = workspace:FindFirstChild("CEOCity")
  if existing then existing:Destroy() end
  W.Plots = {}
+ walkers = {}
  local city = Instance.new("Model")
  city.Name = "CEOCity"
  city.Parent = workspace
@@ -81,6 +106,12 @@ function W.Build()
  game.Lighting.ClockTime = 15
  game.Lighting.Brightness = 2
  game.Lighting.Ambient = Color3.fromRGB(133, 144, 157)
+ for i = 1, 10 do
+  local z = i % 2 == 0 and 33 or -33
+  local x = -145 + (i - 1) * 30
+  local person = W.Person(city, "Passant", CFrame.new(x, 20.7, z), C.Palette[(i - 1) % 4 + 1])
+  W.Wander(person, {Vector3.new(math.min(150, x + 25), 23.7, z), Vector3.new(math.max(-150, x - 25), 23.7, z)}, 3.5 + i % 3, 1.5)
+ end
  return city
 end
 function W.UpdatePlot(index, player, data)
@@ -105,7 +136,8 @@ function W.UpdatePlot(index, player, data)
   local roles = {"Cashier", "Receiver", "Buyer", "Manager"}
   for i, role in ipairs(roles) do
    if (data.Staff[role] or 0) > 0 then
-    W.Person(m, role, cf * CFrame.new(-14 + i * 6, 0, 8), C.Palette[i])
+    local employee = W.Person(m, role, cf * CFrame.new(-14 + i * 6, 0.5, 8), C.Palette[i])
+    W.Wander(employee, {(cf * CFrame.new(-16 + i * 6, 3.5, 8)).Position, (cf * CFrame.new(-12 + i * 6, 3.5, 10)).Position}, 2.5, 4)
    end
   end
  end
@@ -175,55 +207,36 @@ function W.CityEvent(event)
  local color = C.Products[event.Product].Color
  W.Sign(m, event.Kind .. "\n" .. C.Products[event.Product].Name, CFrame.new(0, 27, -109) * CFrame.Angles(0, math.pi, 0), Vector3.new(36, 5, 0.6), color)
  if event.Kind == "Bus de touristes" then
-  local cf = CFrame.new(0, 24, -14) * CFrame.Angles(0, math.pi / 2, 0)
-  W.Part(m, "TourBus", Vector3.new(9, 7, 24), cf, color)
-  for z = -8, 8, 4 do
-   for _, x in ipairs({-4.55, 4.55}) do W.Part(m, "BusWindow", Vector3.new(0.2, 2.8, 3), cf * CFrame.new(x, 1, z), dark) end
-  end
-  for _, z in ipairs({-8, 8}) do
-   for _, x in ipairs({-4.6, 4.6}) do
-    local wheel = W.Part(m, "BusWheel", Vector3.new(1, 3, 3), cf * CFrame.new(x, -2.5, z), dark)
-    wheel.Shape = Enum.PartType.Cylinder
+  local cf = CFrame.new(0, 22, -14) * CFrame.Angles(0, math.pi / 2, 0)
+  local bus = VehicleArt.Build(m, cf + Vector3.new(160, 0, 0), "TourBus", 1, color, W.Part)
+  W.Sign(bus, "CITY TOURS", bus:GetPivot() * CFrame.new(0, 5.45, -10.7), Vector3.new(6, 0.65, 0.1))
+  W.MoveVehicle(bus, cf, 7, function()
+   for i = 1, 6 do
+    local tourist = W.Person(m, "Touriste", CFrame.new(-10 + i * 3, 20.7, -33), C.Palette[(i - 1) % 4 + 1])
+    W.Wander(tourist, {Vector3.new(-20 + i * 5, 23.7, -33), Vector3.new(-17 + i * 5, 23.7, -35)}, 3, 3)
+    if W.OnTourist then W.OnTourist(tourist) end
    end
-  end
-  for i = 1, 6 do
-   local tourist = W.Person(m, "Touriste", CFrame.new(-12 + i * 3, 21, -30), C.Palette[(i - 1) % 4 + 1])
-   if W.OnTourist then W.OnTourist(tourist) end
-  end
+  end)
  elseif event.Kind == "Commande collective" then
   for i = 1, 6 do W.Part(m, "Cargo", Vector3.new(3, 3, 3), CFrame.new(-10 + i * 3, 22.5, -117), Color3.fromRGB(177, 127, 76), Enum.Material.Wood) end
  end
 end
 function W.Delivery(index)
- local m = Instance.new("Model") m.Name, m.Parent = "Delivery", W.City
- local cf = W.Plots[index].CF * CFrame.new(-25, 2, -12)
- W.Part(m, "VanBody", Vector3.new(7, 5, 12), cf * CFrame.new(0, 1, 0), cream)
- W.Part(m, "VanCab", Vector3.new(7, 3, 4), cf * CFrame.new(0, 0, -8), C.Palette[1])
- W.Sign(m, "MARKETBRIDGE", cf * CFrame.new(0, 2, -10.1), Vector3.new(6, 1.5, 0.2))
- for x = -1, 1 do W.Part(m, "Parcel", Vector3.new(2, 2, 2), cf * CFrame.new(x * 3, -0.5, 9), Color3.fromRGB(177, 127, 76)) end
- task.delay(5, function() m:Destroy() end)
+ local plot = W.Plots[index]
+ local cf = CFrame.new(plot.CF.X, 22, index <= 4 and -14 or 14) * CFrame.Angles(0, index <= 4 and math.pi / 2 or -math.pi / 2, 0)
+ local m = VehicleArt.Build(W.City, cf, "DeliveryVan", 1, cream, W.Part)
+ W.Sign(m, "MARKETBRIDGE", cf * CFrame.new(0, 3, 7.65) * CFrame.Angles(0, math.pi, 0), Vector3.new(5.5, 1, 0.1), C.Palette[1])
+ task.delay(5, function() if m.Parent then W.MoveVehicle(m, cf * CFrame.new(0, 0, -70), 5, function() m:Destroy() end) end end)
 end
 function W.Car(index, tier, player)
  local plot = W.Plots[index]
  local cf = plot.CF * CFrame.new(26, 2, -8)
- local m = Instance.new("Model") m.Name = player.Name .. "_Vehicle"
  local color = C.Vehicles[tier].Color
- local body = W.Part(m, "Chassis", Vector3.new(6, 1.5, 10 + tier * 0.4), cf, color)
- W.Part(m, "Cabin", Vector3.new(4.6, 2, 4), cf * CFrame.new(0, 1.7, 0.6), dark)
- W.Part(m, "Windshield", Vector3.new(4.4, 1.6, 0.2), cf * CFrame.new(0, 1.7, -1.5), Color3.fromRGB(133, 191, 209), Enum.Material.Glass)
- for _, x in ipairs({-3, 3}) do
-  for _, z in ipairs({-3, 3}) do
-   local wheel = W.Part(m, "Wheel", Vector3.new(1.2, 2.4, 2.4), cf * CFrame.new(x, -0.5, z) * CFrame.Angles(0, 0, math.pi / 2), dark)
-   wheel.Shape = Enum.PartType.Cylinder
-  end
- end
- for _, x in ipairs({-2, 2}) do W.Part(m, "Headlight", Vector3.new(1, 0.5, 0.2), cf * CFrame.new(x, 0.2, -5 - tier * 0.2), cream, Enum.Material.Neon) end
- if tier >= 4 then W.Part(m, "Spoiler", Vector3.new(7, 0.4, 1.5), cf * CFrame.new(0, 1.5, 4.5), dark) end
+ local m = VehicleArt.Build(W.City, cf, "Car", tier, color, W.Part) m.Name = player.Name .. "_Vehicle"
  local seat = Instance.new("VehicleSeat")
  seat.Name, seat.Size, seat.CFrame = "Driver", Vector3.new(2, 1, 2), cf * CFrame.new(0, 2.8, 0)
  seat.Anchored, seat.Transparency, seat.Parent = true, 1, m
  seat:SetAttribute("OwnerId", player.UserId)
- m.PrimaryPart, m.Parent = body, W.City
  return {Model = m, Seat = seat, Tier = tier, Speed = 0}
 end
 return W

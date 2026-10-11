@@ -85,6 +85,7 @@ function L.Start(sessions, W, E, P, send, valid, otherCarry)
    if not r or not model.Parent or not prompt.Enabled or not valid(player) or self:Busy(player) or otherCarry(player) then return end
    if (r.Position - model.PrimaryPart.Position).Magnitude > 11 or sessions[player].Data.Stock < 1 then return end
    prompt.Enabled = false model.Parent = W.City
+   model:SetAttribute("Carried", true)
    self.Carries[player] = {Model = model, Tourist = true, Started = os.clock(), LastPosition = r.Position}
    h.WalkSpeed = 11 send(player, "Ramène le vacancier à ton comptoir pour une vente x2 !")
   end)

@@ -34,6 +34,15 @@ Le vol est **expérimental et limité à Studio** : niveau 2 des deux entreprise
 
 ## Validation à terminer avant lancement
 
+### Passe visuelle du 11 octobre
+
+Dernière exécution Studio : **349 assertions réussies** (87 existantes et 262 vérifications des personnages et véhicules). Démarrage et déplacement des passants observés dans Studio ; bus visible en jeu.
+
+- PNJ articulés, visages, cheveux, accessoires par rôle, animations procédurales de marche et d'attente.
+- Passants sur les trottoirs, promenades des touristes après arrivée du bus et petits déplacements des employés. Ces déplacements sont décoratifs, sur parcours prédéfinis : les tâches des employés restent temporisées, sans navigation jusqu'aux colis.
+- Voitures, camionnette et bus enrichis : vitrages, roues et jantes, phares, sièges et détails de carrosserie. Arrivée animée du bus et départ de la camionnette.
+- Modèles stylisés construits localement, sans Meshy ni achat d'assets. La conduite, les performances mobiles et les interactions de portage doivent encore être vérifiées après cette passe.
+
 1. Parcours complet manuel, puis automatisé, jusqu'à la tour.
 2. Deux puis huit clients : colis, vacanciers, VIP, départs, décès, véhicules, double interaction.
 3. Téléphone portrait/paysage et conduite tactile.
