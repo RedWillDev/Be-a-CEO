@@ -128,21 +128,38 @@ function L.Start(sessions, W, E, P, send, valid, otherCarry)
  end
  function self:AddTourist(model)
   local prompt = Instance.new("ProximityPrompt")
-  prompt.ActionText, prompt.ObjectText, prompt.HoldDuration = "Accompagner", "Vacancier • vente x2", 0.5
+  prompt.Name = "CarryTourist"
+  prompt.ActionText, prompt.ObjectText, prompt.HoldDuration = "Porter", "Vacancier • vente x2", 0
   prompt.MaxActivationDistance, prompt.RequiresLineOfSight, prompt.Parent = 9, false, model.PrimaryPart
   prompt.Triggered:Connect(function(player)
    local r, h = root(player)
-   if not r or not model.Parent or not prompt.Enabled or not valid(player) or self:Busy(player) or otherCarry(player) then return end
-   if (r.Position - model.PrimaryPart.Position).Magnitude > 11 or sessions[player].Data.Stock < 1 then return end
-   prompt.Enabled = false model.Parent = W.City
+   if not model.Parent or not model.PrimaryPart or not prompt.Enabled or model:GetAttribute("Carried") or model:GetAttribute("Shopping") then return end
+   if not valid(player) then send(player, "Portage indisponible pendant le chargement ou la pause de sauvegarde.") return end
+   if not r then send(player, "Descends du véhicule pour porter un vacancier.") return end
+   if self:Busy(player) or otherCarry(player) then send(player, "Dépose d'abord ce que tu portes avec le bouton DÉPOSER.") return end
+   if (r.Position - model.PrimaryPart.Position).Magnitude > 11 then send(player, "Rapproche-toi du vacancier pour le porter.") return end
+   prompt.Enabled = false
+   W.StopRoute(model)
+   local handle
+   local ok, failure = pcall(function()
+    handle = Carry.new(player.Character, model, "Tourist")
+    handle:Attach()
+   end)
+   if not ok then
+    if handle then handle:Detach() end
+    if model.Parent then prompt.Enabled = true W.TouristWalk(model) end
+    warn("[Tourist carry] " .. tostring(failure))
+    send(player, "Impossible de prendre ce vacancier pour le moment. Réessaie.")
+    return
+   end
+   model.Parent = W.City
    -- Reparenting protects carried tourists from event cleanup; retain a bounded lifetime.
    if not model:GetAttribute("CarryExpiryScheduled") then
     model:SetAttribute("CarryExpiryScheduled", true)
     game:GetService("Debris"):AddItem(model, 240)
    end
-   local handle = Carry.new(player.Character, model, "Tourist"):Attach()
    self.Carries[player] = {Handle = handle, Model = model, Tourist = true, Prompt = prompt, Character = player.Character, Started = os.clock(), LastPosition = r.Position}
-   h.WalkSpeed = 11 send(player, "Ramène le vacancier à ton comptoir pour une vente x2 !")
+   send(player, sessions[player].Data.Stock > 0 and "Ramène le vacancier à ton comptoir pour une vente x2 !" or "Vacancier porté ! Prévois du stock pour pouvoir l'accueillir et l'encaisser.")
   end)
  end
  function self:Tick()
@@ -164,7 +181,7 @@ function L.Start(sessions, W, E, P, send, valid, otherCarry)
   end
   for player, carry in pairs(self.Carries) do
    local r = root(player) local s = sessions[player]
-   if not r or not valid(player) or not carry.Model.Parent or (carry.Owner and not valid(carry.Owner)) or (carry.Started and os.clock() - carry.Started > 90) or (r and carry.LastPosition and (r.Position - carry.LastPosition).Magnitude > 40) then self:Drop(player)
+   if not r or not valid(player) or not carry.Model.Parent or (carry.Handle and not carry.Handle.Attached) or (carry.Owner and not valid(carry.Owner)) or (carry.Started and os.clock() - carry.Started > 90) or (r and carry.LastPosition and (r.Position - carry.LastPosition).Magnitude > 40) then self:Drop(player)
    else
     carry.LastPosition = r.Position
     local counter = W.Plots[s.Plot].CF * CFrame.new(0, 2, 0)

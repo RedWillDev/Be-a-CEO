@@ -4,6 +4,10 @@ Cet audit distingue présence du code et validation réelle. La V1 n'est pas enc
 
 ## Correction clients et caisse — 12 octobre 2026
 
+### Prise des vacanciers — correctif à vérifier par le joueur
+
+L'ancien refus silencieux avec stock vide est retiré pour la prise (le stock reste nécessaire à l'admission en file et à la vente). Prompt « Porter » sur un appui, sans maintien pendant la marche. Le trajet est arrêté avant l'attache. Un échec d'attache réactive le prompt et la promenade au lieu de bloquer le vacancier ; il laisse une erreur identifiable dans la console. Messages explicites pour portage déjà occupé, véhicule, distance ou sauvegarde suspendue. Le HUD n'est pas modifié. Aucun essai en jeu lancé par l'assistant ; ces causes ont été identifiées à la lecture du code, sans reproduction confirmée du signalement.
+
 ### Refonte HUD — rendu à valider par le joueur
 
 Trois cartes de statistiques (trésorerie, entreprise, stock), raccourcis Boutique / Entreprise / Garage / Missions et retour à la boutique. Menus fermés par défaut, fenêtre centrale avec fond assombri refermable, onglets actifs mis en évidence. Objectif court en bas ; bouton Déposer uniquement pendant le portage ; notifications séparées. Les cartes d'achat ont des boutons de 42 pixels et des descriptions plus hautes sur petit écran. En paysage bas, les raccourcis passent en barre horizontale. Les fonctions de marché, personnel, progression et lifestyle sont conservées ; tendance, file et état de sauvegarde sont consultables dans Boutique.
