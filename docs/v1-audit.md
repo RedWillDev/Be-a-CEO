@@ -4,6 +4,12 @@ Cet audit distingue présence du code et validation réelle. La V1 n'est pas enc
 
 ## Correction clients et caisse — 12 octobre 2026
 
+### Refonte HUD — rendu à valider par le joueur
+
+Trois cartes de statistiques (trésorerie, entreprise, stock), raccourcis Boutique / Entreprise / Garage / Missions et retour à la boutique. Menus fermés par défaut, fenêtre centrale avec fond assombri refermable, onglets actifs mis en évidence. Objectif court en bas ; bouton Déposer uniquement pendant le portage ; notifications séparées. Les cartes d'achat ont des boutons de 42 pixels et des descriptions plus hautes sur petit écran. En paysage bas, les raccourcis passent en barre horizontale. Les fonctions de marché, personnel, progression et lifestyle sont conservées ; tendance, file et état de sauvegarde sont consultables dans Boutique.
+
+Contrôles : construction Rojo et différences de code, sans lancement de partie ni inspection visuelle. Le joueur doit valider lisibilité, débordements et utilisation téléphone/tablette avant de considérer ce HUD comme terminé.
+
 ### Livraisons et diversité — essais joueur à venir
 
 Camionnette venant du bord du boulevard, arrêt devant la parcelle, carton animé du véhicule au point de livraison puis départ vers l'autre extrémité. Le carton de déchargement n'est pas interactif ; le vrai colis est créé seulement après son arrivée. L'ordre reste en attente et sauvegardable jusqu'au dépôt ; les callbacks vérifient l'identité de session et de commande pour éviter un double dépôt. Une livraison interrompue est relancée sans achat supplémentaire. Le délai fournisseur correspond maintenant à l'expédition, suivi du trajet et du déchargement ; l'interface le distingue.
