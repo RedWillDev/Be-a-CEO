@@ -10,6 +10,8 @@ function L.Start(sessions, W, E, P, send, valid, otherCarry)
   return r, h
  end
  local function reset(player)
+  local carry = self.Carries[player]
+  if carry and carry.Character then carry.Character:SetAttribute("CarryingTourist", nil) end
   local h = player.Character and player.Character:FindFirstChildOfClass("Humanoid") if h then h.WalkSpeed = 16 end
   self.Carries[player] = nil
  end
@@ -20,7 +22,11 @@ function L.Start(sessions, W, E, P, send, valid, otherCarry)
   if carry.Owner then
    carry.Carrier = nil
    if carry.Model.Parent then carry.Model:PivotTo(carry.Home) carry.Prompt.Enabled = true end
-  elseif carry.Model.Parent then carry.Model:Destroy() end
+  elseif carry.Model.Parent then
+   carry.Model:SetAttribute("Carried", false)
+   if carry.Prompt then carry.Prompt.Enabled = true end
+   W.TouristWalk(carry.Model)
+  end
   reset(player)
  end
  function self:Remove(player)
@@ -85,8 +91,14 @@ function L.Start(sessions, W, E, P, send, valid, otherCarry)
    if not r or not model.Parent or not prompt.Enabled or not valid(player) or self:Busy(player) or otherCarry(player) then return end
    if (r.Position - model.PrimaryPart.Position).Magnitude > 11 or sessions[player].Data.Stock < 1 then return end
    prompt.Enabled = false model.Parent = W.City
+   -- Reparenting protects carried tourists from event cleanup; retain a bounded lifetime.
+   if not model:GetAttribute("CarryExpiryScheduled") then
+    model:SetAttribute("CarryExpiryScheduled", true)
+    game:GetService("Debris"):AddItem(model, 240)
+   end
    model:SetAttribute("Carried", true)
-   self.Carries[player] = {Model = model, Tourist = true, Started = os.clock(), LastPosition = r.Position}
+   player.Character:SetAttribute("CarryingTourist", true)
+   self.Carries[player] = {Model = model, Tourist = true, Prompt = prompt, Character = player.Character, Started = os.clock(), LastPosition = r.Position}
    h.WalkSpeed = 11 send(player, "Ramène le vacancier à ton comptoir pour une vente x2 !")
   end)
  end
@@ -104,19 +116,28 @@ function L.Start(sessions, W, E, P, send, valid, otherCarry)
    if not r or not valid(player) or not carry.Model.Parent or (carry.Owner and not valid(carry.Owner)) or (carry.Started and os.clock() - carry.Started > 90) or (r and carry.LastPosition and (r.Position - carry.LastPosition).Magnitude > 40) then self:Drop(player)
    else
     carry.LastPosition = r.Position
-    carry.Model:PivotTo(r.CFrame * CFrame.new(0, 1.5, -2))
+    if carry.Owner then carry.Model:PivotTo(r.CFrame * CFrame.new(0, 1.5, -2)) end
     local counter = W.Plots[s.Plot].CF * CFrame.new(0, 2, 0)
     if (r.Position - counter.Position).Magnitude < 9 then
      if carry.Owner then self:Receive(carry.Owner, player)
      else
-      local amount = E.Sale(s.Data, 2)
-      if amount > 0 then P.OnSale(s.Data, "Touriste", os.time()) end
-      self:Drop(player) send(player, amount > 0 and ("Vacancier accueilli : +" .. amount .. " $ !") or "Plus de stock : le vacancier repart.")
+      if W.CheckIn and W.CheckIn(player, carry.Model, 2, "Touriste") then
+       reset(player) send(player, "Vacancier accueilli : encaisse-le au comptoir.")
+      end
      end
     end
    end
   end
  end
+ -- Smooth passenger following is visual only; all delivery checks stay in Tick.
+ game:GetService("RunService").Heartbeat:Connect(function()
+  for player, carry in pairs(self.Carries) do
+   if carry.Tourist and carry.Model.Parent then
+    local r = root(player)
+    if r then carry.Model:PivotTo(r.CFrame * CFrame.new(0, 0.4, -1.7) * CFrame.Angles(0, math.pi / 2, 0)) end
+   end
+  end
+ end)
  return self
 end
 return L

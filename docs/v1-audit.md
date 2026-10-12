@@ -2,6 +2,27 @@
 
 Cet audit distingue présence du code et validation réelle. La V1 n'est pas encore certifiée prête à publier.
 
+## Correction clients et caisse — 12 octobre 2026
+
+### Vacanciers et portage (à valider par le joueur)
+
+Tenue distincte : chapeau, lunettes, chemise à motifs, short, sandales et sac. Les vacanciers parcourent désormais le trottoir entier à une vitesse proche des passants. Seuls les vacanciers disposent du prompt de portage parmi ces piétons ; le VIP garde son interaction spéciale existante.
+
+La documentation Roblox des animations par défaut ne fournit pas de portage à deux personnages. Une pose procédurale spécifique a donc été ajoutée (bras du porteur relevés, jambes du vacancier repliées), sans animation tierce ni achat. Le suivi du vacancier passe de la boucle économique à une mise à jour à chaque image serveur. La marche Roblox reste inchangée. Relâcher le vacancier le remet en promenade au lieu de le supprimer ; une limite de durée nettoie les vacanciers sortis du groupe de leur événement.
+
+Contrôles limités au code et à la construction locale : **aucun essai en jeu lancé par l'assistant pour cette passe**, à la demande du joueur. Le rendu de la pose, les proportions R6/R15 et les interruptions sont à vérifier par lui.
+
+Cette passe remplace les déplacements visuels et ventes immédiates décrits plus bas :
+
+- 36 passants (au lieu de 10), modèles Roblox R6 standards avec couleurs variées, animations Roblox de marche et d'attente chargées par le serveur. Déplacement physique par Humanoid, sans interpolation du modèle pour marcher.
+- Le magasin attire un passant déjà présent sur son côté du boulevard. Il suit le trottoir, entre par la façade ouverte, rejoint le comptoir, attend son paiement puis retourne dans la ville. Une place de service par magasin pour cette version, pas encore de file de plusieurs clients.
+- Aucun encaissement de client automatique sans caissier, y compris clients disputés, bonus touristes et clients transportés. Les ventes hors ligne exigent également un caissier. Les contributions collectives restent une action explicite du joueur.
+- Le caissier sert seulement un client réellement arrivé au comptoir, après son délai de service. Stock épuisé ou trajet échoué : pas de vente.
+- Validation Studio : **350 assertions réussies** ; 36 PNJ standards présents ; animation de marche chargée et jouée, déplacement mesuré. Client au comptoir observé. Pendant 20 secondes loin de la caisse et sans caissier : 6 ventes, 4 produits et 501 dollars inchangés. Une interaction manuelle isolée vend ensuite un produit. Après recrutement du caissier, une vente supplémentaire se réalise sans interaction.
+- Ancienne animation procédurale cliente retirée car remplacée par les pistes Roblox. Pas d'achat d'assets ni utilisation de Meshy.
+
+Restent à tester : file multi-client, obstacles dynamiques, charge mobile, concurrence à huit joueurs et parcours complets de portage après cette modification. La navigation utilise des étapes prédéfinies, pas un calcul de chemin autour des véhicules.
+
 Dernière exécution Studio : **87 assertions réussies** (économie 40, progression 29, opérations 18). Vérification par l'interface : commande 180 $, colis visible sans créditer le stock, recrutement du réceptionnaire 150 $, disparition du colis et marchandises disponibles pour les ventes. Le portage manuel complet, les vacanciers et les transferts entre deux vrais joueurs restent à tester de bout en bout.
 
 | Critère | État | Preuve / travail restant |

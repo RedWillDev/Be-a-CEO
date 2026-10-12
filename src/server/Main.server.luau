@@ -1,6 +1,5 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
 local DataStoreService = game:GetService("DataStoreService")
 local shared = game.ReplicatedStorage.BeACEO
 local C = require(shared.Config)
@@ -113,7 +112,7 @@ Players.PlayerRemoving:Connect(function(player)
  if not s then return end
  if carrier == player then dropVIP() end
  logistics:Remove(player)
- if s.WaitingModel then s.WaitingModel:Destroy() end
+ if s.Visitor then W.ReleaseCustomer(s.Visitor, s.Plot) end
  if cars[player] then cars[player].Model:Destroy() cars[player] = nil end
  if s.Ready then s.Ready = false save(player, true) end
  sessions[player] = nil W.UpdatePlot(s.Plot, nil, nil)
@@ -179,25 +178,54 @@ remote.OnServerEvent:Connect(function(player, action, value)
  end
  send(player, message)
 end)
-local function customer(s, amount, disputed)
- local cf = W.Plots[s.Plot].CF
- local npc = W.Person(W.City, "Client", cf * CFrame.new(0, 0, -23), disputed and C.Palette[2] or C.Palette[3])
- local value = Instance.new("CFrameValue") value.Value = npc:GetPivot()
- local connection = value.Changed:Connect(function(cframe) if npc.Parent then npc:PivotTo(cframe) end end)
- local tween = TweenService:Create(value, TweenInfo.new(2), {Value = value.Value * CFrame.new(0, 0, 12)}) tween:Play()
- local label = Instance.new("BillboardGui") label.Size, label.StudsOffset, label.AlwaysOnTop = UDim2.fromOffset(180, 38), Vector3.new(0, 4, 0), true label.Parent = npc.PrimaryPart
- local text = Instance.new("TextLabel") text.Size, text.BackgroundTransparency, text.Text = UDim2.fromScale(1, 1), 1, "+" .. amount .. " $ • " .. (disputed and "Client de la ville" or "Merci !") text.TextColor3, text.TextSize, text.Font, text.Parent = C.Palette[1], 17, Enum.Font.GothamBold, label
- task.delay(4, function() connection:Disconnect() value:Destroy() npc:Destroy() end)
+local function releaseVisitor(s)
+ local npc = s.Visitor
+ s.Visitor, s.Waiting, s.WaitingKind, s.ArrivedAt = nil, nil, nil, nil
+ if npc then
+  local label = npc:FindFirstChild("CheckoutLabel", true) if label then label:Destroy() end
+  W.ReleaseCustomer(npc, s.Plot)
+ end
+end
+local function arrived(player, s, npc, reached, bonus, kind)
+ if s.Visitor ~= npc then return end
+ if not reached or not valid(player) or s.Data.Stock < 1 then releaseVisitor(s) return end
+ s.Waiting, s.WaitingKind, s.ArrivedAt = bonus, kind, os.clock()
+ local label = Instance.new("BillboardGui") label.Name = "CheckoutLabel"
+ label.Size, label.StudsOffset, label.AlwaysOnTop = UDim2.fromOffset(180, 38), Vector3.new(0, 3, 0), true label.Parent = npc.PrimaryPart
+ local text = Instance.new("TextLabel") text.Size, text.BackgroundTransparency, text.Text = UDim2.fromScale(1, 1), 1, "En attente de paiement"
+ text.TextColor3, text.TextSize, text.Parent = C.Palette[1], 16, label
+ send(player, "Un client attend au comptoir : encaisse-le pour réaliser la vente.")
+end
+local function invite(player, s, bonus, kind)
+ if s.Visitor or s.Data.Stock < 1 then return end
+ s.Visitor = W.Visit(s.Plot, function(npc, reached) arrived(player, s, npc, reached, bonus, kind) end)
+end
+W.CheckIn = function(player, npc, bonus, kind)
+ local s = sessions[player]
+ if not valid(player) or s.Visitor or s.Data.Stock < 1 then return false end
+ s.Visitor = npc npc:SetAttribute("Carried", false) npc:SetAttribute("Shopping", true)
+ W.Route(npc, {(W.Plots[s.Plot].CF * CFrame.new(0, 3.5, -5)).Position}, function(reached) arrived(player, s, npc, reached, bonus, kind) end)
+ return true
+end
+local function checkout(player, s)
+ if not s.Waiting or not s.Visitor or not s.Visitor.Parent then return false end
+ local target = (W.Plots[s.Plot].CF * CFrame.new(0, 3.5, -5)).Position
+ if (s.Visitor.PrimaryPart.Position - target).Magnitude > 5 then return false end
+ local amount = E.Sale(s.Data, s.Waiting)
+ if amount > 0 then
+  P.OnSale(s.Data, s.WaitingKind, os.time())
+  if s.WaitingKind == "Disputed" then s.SessionDisputed = (s.SessionDisputed or 0) + 1 end
+ end
+ releaseVisitor(s)
+ send(player, amount > 0 and ("Client encaissé : +" .. amount .. " $ !") or "Plus de stock : le client repart.")
+ return amount > 0
 end
 local seconds = 0
 W.OnCashier = function(player, index)
  local s = sessions[player] local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
  if not valid(player) or not root or s.Plot ~= index or (root.Position - (W.Plots[index].CF * CFrame.new(0, 2, 0)).Position).Magnitude > 12 then return end
  if not s.Waiting then send(player, "Aucun client à encaisser pour l'instant.") return end
- local amount = E.Sale(s.Data, s.Waiting)
- s.Waiting = nil if s.WaitingModel then s.WaitingModel:Destroy() s.WaitingModel = nil end
- if amount > 0 then P.OnSale(s.Data, "Local", os.time()) customer(s, amount, false) end
- send(player, amount > 0 and ("Client encaissé : +" .. amount .. " $ !") or "Plus de stock.")
+ checkout(player, s)
 end
 task.spawn(function()
  while true do
@@ -218,7 +246,7 @@ task.spawn(function()
     local s = sessions[player] local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
     if not vip or carrier or logistics:Busy(player) or not s or not s.Ready or (not studio and os.time() - s.LastSaved > 110) or not root or (root.Position - vip.PrimaryPart.Position).Magnitude > 12 then return end
     if s.Data.Stock < 1 then send(player, "Il te faut du stock pour accueillir ce client.") return end
-    carrier = player prompt.Enabled = false
+    carrier = player prompt.Enabled = false vip:SetAttribute("Carried", true)
     player.Character.Humanoid.WalkSpeed = 11
     send(player, "Ramène le VIP à ton comptoir : une vente à triple prix !")
    end)
@@ -231,8 +259,10 @@ task.spawn(function()
    else
     vip:PivotTo(root.CFrame * CFrame.new(0, 3, 1))
     if (root.Position - W.Plots[s.Plot].CF.Position).Magnitude < 16 then
-     local amount = E.Sale(s.Data, 3) if amount > 0 then P.OnSale(s.Data, "VIP", now) end local player = carrier dropVIP()
-     send(player, amount > 0 and ("VIP livré : +" .. amount .. " $ !") or "Plus de stock : le client repart.")
+     if W.CheckIn(carrier, vip, 3, "VIP") then
+      local player = carrier hum.WalkSpeed = 16 vip, carrier = nil, nil
+      send(player, "VIP accueilli : il va attendre son encaissement au comptoir.")
+     end
     end
    end
   end
@@ -248,18 +278,15 @@ task.spawn(function()
    end
    local interval = d.PriceMode == 3 and 7 or d.PriceMode == 1 and 3 or 5
    interval = math.max(2, interval - math.max(0, d.Staff.Cashier - 1))
+   if s.Visitor and not s.Visitor.Parent then releaseVisitor(s) end
+   if s.Waiting and d.Stock < 1 then releaseVisitor(s) end
+   if s.Waiting and d.Staff.Cashier > 0 and os.clock() - s.ArrivedAt >= interval then checkout(player, s) end
    if seconds % interval == 0 and d.Stock > 0 then
     local bonus = cityEvent.Kind == "Tendance surprise" and d.Product == cityEvent.Product and 1.3 or 1
-    if d.Staff.Cashier > 0 then
-     local amount = E.Sale(d, bonus) P.OnSale(d, "Local", now) customer(s, amount, false)
-     s.Waiting = nil if s.WaitingModel then s.WaitingModel:Destroy() s.WaitingModel = nil end
-    elseif not s.Waiting then
-     s.Waiting = bonus s.WaitingModel = W.Person(W.City, "ClientEnAttente", W.Plots[s.Plot].CF * CFrame.new(0, 0, -5), C.Palette[3])
-     send(player, "Un client attend : approche du comptoir pour l'encaisser.")
-    end
+    invite(player, s, bonus, "Local")
    end
    if cityEvent.Kind == "Bus de touristes" and seconds % 3 == 0 and d.Product == cityEvent.Product and d.Stock > 0 then
-    local amount = E.Sale(d, 1.2) P.OnSale(d, "Touriste", now) customer(s, amount, true)
+    invite(player, s, 1.2, "Touriste")
    end
    if d.AutoOrder and d.Staff.Buyer > 0 and d.Stock <= 2 + d.Staff.Buyer and not d.Order and not d.Parcel then
     local ok = E.Action(d, "Order")
@@ -280,7 +307,7 @@ task.spawn(function()
      if not score or candidate > score then winner, score = player, candidate end
     end
    end
-   if winner then local s = sessions[winner] local amount = E.Sale(s.Data, 1.25) s.SessionDisputed = (s.SessionDisputed or 0) + 1 P.OnSale(s.Data, "Disputed", now) customer(s, amount, true) send(winner) end
+   if winner then invite(winner, sessions[winner], 1.25, "Disputed") end
   end
   if seconds % 45 == 0 then for player, s in pairs(sessions) do if s.Ready then task.spawn(save, player, false) end end end
  end

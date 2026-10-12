@@ -4,6 +4,7 @@ local VehicleArt = require(script.Parent.VehicleArt)
 local TweenService = game:GetService("TweenService")
 local W = {Plots = {}}
 local walkers = {}
+local pedestrians = {}
 local walkClock = 0
 game:GetService("RunService").Heartbeat:Connect(function(dt)
  walkClock += dt if walkClock < 0.1 then return end
@@ -11,19 +12,72 @@ game:GetService("RunService").Heartbeat:Connect(function(dt)
  for model, route in pairs(walkers) do
   if not model.Parent then walkers[model] = nil continue end
   if model:GetAttribute("Carried") then continue end
-  local cf = model:GetPivot() local goal = route.Points[route.Index]
-  local delta = goal - cf.Position
-  if delta.Magnitude < 0.4 then
+  local hum = model:FindFirstChildOfClass("Humanoid")
+  local goal = route.Points[route.Index]
+  local delta = goal - model.PrimaryPart.Position
+  local distance = Vector3.new(delta.X, 0, delta.Z).Magnitude
+  if hum.Health <= 0 or os.clock() > route.Deadline then
+   walkers[model] = nil hum:Move(Vector3.zero)
+   if route.Done then task.defer(route.Done, false) end
+   if not route.Done and hum.Health > 0 then
+    route.Index = route.Index % #route.Points + 1 route.Deadline = os.clock() + 65 walkers[model] = route
+   end
+  elseif distance < 1.6 then
+   hum:Move(Vector3.zero)
    route.Wait -= step
-   if route.Wait <= 0 then route.Index = route.Index % #route.Points + 1 route.Wait = route.Pause end
+   if route.Wait <= 0 then
+    if route.Done and route.Index == #route.Points then
+     walkers[model] = nil task.defer(route.Done, true)
+    else
+     route.Index = route.Index % #route.Points + 1 route.Wait = route.Pause route.Deadline = os.clock() + 65
+    end
+   end
   else
-   local nextPosition = cf.Position + delta.Unit * math.min(delta.Magnitude, route.Speed * step)
-   model:PivotTo(CFrame.lookAt(nextPosition, nextPosition + Vector3.new(delta.X, 0, delta.Z)))
+   hum.WalkSpeed = route.Speed
+   hum:MoveTo(goal)
   end
  end
 end)
 function W.Wander(model, points, speed, pause)
- walkers[model] = {Points = points, Speed = speed or 5, Pause = pause or 2, Wait = pause or 2, Index = 1}
+ walkers[model] = {Points = points, Speed = speed or 7, Pause = pause or 2, Wait = pause or 2, Index = 1, Deadline = os.clock() + 60}
+end
+function W.TouristWalk(model)
+ local z = model.PrimaryPart.Position.Z < 0 and -31 or 31
+ W.Wander(model, {Vector3.new(-155, 23.7, z), Vector3.new(155, 23.7, z)}, 6.5, 1.5)
+end
+function W.Route(model, points, done)
+ W.Wander(model, points, 8, 0)
+ walkers[model].Done = done
+end
+function W.ReleaseCustomer(model, index)
+ if not model or not model.Parent then return end
+ local cf = W.Plots[index].CF
+ local z = index <= 4 and -31 or 31
+ local function resume()
+  if not model.Parent then return end
+  if not pedestrians[model] then model:Destroy() return end
+  model:SetAttribute("Shopping", false)
+  W.Wander(model, {Vector3.new(-155, 23.7, z), Vector3.new(155, 23.7, z)}, 7, 1)
+ end
+ W.Route(model, {(cf * CFrame.new(0, 3, -19)).Position, Vector3.new(cf.X, 23.7, z)}, resume)
+end
+function W.Visit(index, arrived)
+ local cf = W.Plots[index].CF
+ local z = index <= 4 and -31 or 31
+ local candidate, best
+ for model in pairs(pedestrians) do
+  if not model.Parent then pedestrians[model] = nil
+  elseif not model:GetAttribute("Shopping") and not model:GetAttribute("Carried") and model.PrimaryPart.Position.Z * z > 0 then
+   local distance = math.abs(model.PrimaryPart.Position.X - cf.X)
+   if not best or distance < best then candidate, best = model, distance end
+  end
+ end
+ if not candidate then return nil end
+ candidate:SetAttribute("Shopping", true)
+ W.Route(candidate, {Vector3.new(cf.X, 23.7, z), (cf * CFrame.new(0, 3, -19)).Position, (cf * CFrame.new(0, 3.5, -5)).Position}, function(reached)
+  arrived(candidate, reached)
+ end)
+ return candidate
 end
 function W.MoveVehicle(model, destination, duration, finished)
  local value = Instance.new("CFrameValue") value.Value = model:GetPivot()
@@ -63,6 +117,7 @@ function W.Build()
  if existing then existing:Destroy() end
  W.Plots = {}
  walkers = {}
+ pedestrians = {}
  local city = Instance.new("Model")
  city.Name = "CEOCity"
  city.Parent = workspace
@@ -106,11 +161,12 @@ function W.Build()
  game.Lighting.ClockTime = 15
  game.Lighting.Brightness = 2
  game.Lighting.Ambient = Color3.fromRGB(133, 144, 157)
- for i = 1, 10 do
-  local z = i % 2 == 0 and 33 or -33
-  local x = -145 + (i - 1) * 30
+ for i = 1, 36 do
+  local z = i % 2 == 0 and 31 or -31
+  local x = -153 + math.floor((i - 1) / 2) * 18
   local person = W.Person(city, "Passant", CFrame.new(x, 20.7, z), C.Palette[(i - 1) % 4 + 1])
-  W.Wander(person, {Vector3.new(math.min(150, x + 25), 23.7, z), Vector3.new(math.max(-150, x - 25), 23.7, z)}, 3.5 + i % 3, 1.5)
+  pedestrians[person] = true
+  W.Wander(person, {Vector3.new(i % 3 == 0 and -155 or 155, 23.7, z), Vector3.new(i % 3 == 0 and 155 or -155, 23.7, z)}, 6 + i % 3, 1)
  end
  return city
 end
@@ -213,7 +269,7 @@ function W.CityEvent(event)
   W.MoveVehicle(bus, cf, 7, function()
    for i = 1, 6 do
     local tourist = W.Person(m, "Touriste", CFrame.new(-10 + i * 3, 20.7, -33), C.Palette[(i - 1) % 4 + 1])
-    W.Wander(tourist, {Vector3.new(-20 + i * 5, 23.7, -33), Vector3.new(-17 + i * 5, 23.7, -35)}, 3, 3)
+    W.TouristWalk(tourist)
     if W.OnTourist then W.OnTourist(tourist) end
    end
   end)

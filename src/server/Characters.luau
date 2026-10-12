@@ -1,9 +1,19 @@
--- R6-style articulated characters, no external scripts or animation asset dependency.
+-- Standard Roblox R6 characters, with a local fallback and role-specific outfits.
 local CollectionService = game:GetService("CollectionService")
 local Characters = {}
+local Players = game:GetService("Players")
+local PhysicsService = game:GetService("PhysicsService")
+pcall(function() PhysicsService:RegisterCollisionGroup("CEONPC") end)
+PhysicsService:CollisionGroupSetCollidable("CEONPC", "CEONPC", false)
+local description = Instance.new("HumanoidDescription")
+local success, template = pcall(function()
+ return Players:CreateHumanoidModelFromDescriptionAsync(description, Enum.HumanoidRigType.R6)
+end)
+description:Destroy()
+if not success then warn("[NPC] Roblox avatar unavailable; using local R6 fallback: " .. tostring(template)) template = nil end
 local skins = {Color3.fromRGB(221, 174, 130), Color3.fromRGB(146, 95, 65), Color3.fromRGB(244, 207, 172), Color3.fromRGB(92, 63, 49)}
 local serial = 0
-function Characters.Create(parent, name, cf, color)
+local function fallback(parent, name, cf, color)
  serial += 1
  local model = Instance.new("Model") model.Name = name
  local skin = skins[(serial - 1) % #skins + 1]
@@ -58,6 +68,95 @@ function Characters.Create(parent, name, cf, color)
  local hum = Instance.new("Humanoid") hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None hum.BreakJointsOnDeath = false hum.Parent = model
  model.PrimaryPart, model.Parent = root, parent
  model:SetAttribute("VisualSeed", serial)
+ CollectionService:AddTag(model, "CEONPC")
+ return model
+end
+function Characters.Create(parent, name, cf, color)
+ local model
+ if template then
+  serial += 1
+  model = template:Clone() model.Name = name
+  for _, item in ipairs(model:GetDescendants()) do
+   if item:IsA("BaseScript") then item:Destroy() end
+  end
+  local skin = skins[(serial - 1) % #skins + 1]
+  local colors = model:FindFirstChildOfClass("BodyColors") or Instance.new("BodyColors", model)
+  colors.HeadColor3, colors.LeftArmColor3, colors.RightArmColor3 = skin, skin, skin
+  colors.TorsoColor3 = color
+  colors.LeftLegColor3, colors.RightLegColor3 = Color3.fromRGB(40, 50, 70), Color3.fromRGB(40, 50, 70)
+  model.PrimaryPart = model:FindFirstChild("HumanoidRootPart")
+  model:PivotTo(cf * CFrame.new(0, 3.1, 0))
+  model.Parent = parent
+ else
+  model = fallback(parent, name, cf, color)
+ end
+ local hum = model:FindFirstChildOfClass("Humanoid")
+ if name == "Touriste" then
+  model:SetAttribute("Tourist", true)
+  local head, torso = model.Head, model.Torso
+  local function clothing(n, size, limb, offset, tint)
+   local p = Instance.new("Part")
+   p.Name, p.Size, p.Color = n, size, tint
+   p.CanCollide, p.CanTouch, p.CanQuery, p.Massless = false, false, false, true
+   p.CFrame, p.Parent = limb.CFrame * offset, model
+   local weld = Instance.new("WeldConstraint") weld.Part0, weld.Part1, weld.Parent = limb, p, p
+  end
+  local straw = Color3.fromRGB(234, 206, 143)
+  clothing("VacationHatBrim", Vector3.new(2.5, 0.12, 1.9), head, CFrame.new(0, 0.6, 0), straw)
+  clothing("VacationHatCrown", Vector3.new(1.6, 0.45, 1.3), head, CFrame.new(0, 0.85, 0), straw)
+  clothing("VacationHatRibbon", Vector3.new(1.65, 0.14, 1.35), head, CFrame.new(0, 0.7, 0), color)
+  for _, x in ipairs({-0.42, 0.42}) do clothing("Sunglasses", Vector3.new(0.65, 0.3, 0.12), head, CFrame.new(x, 0.12, -0.55), Color3.fromRGB(25, 36, 48)) end
+  clothing("GlassesBridge", Vector3.new(0.25, 0.08, 0.12), head, CFrame.new(0, 0.12, -0.55), Color3.fromRGB(25, 36, 48))
+  clothing("VacationShirt", Vector3.new(2.05, 1.95, 1.05), torso, CFrame.identity, color)
+  for i = 1, 4 do
+   clothing("ShirtPattern", Vector3.new(0.3, 0.22, 0.04), torso, CFrame.new(i % 2 == 0 and 0.55 or -0.55, 0.8 - i * 0.33, -0.55) * CFrame.Angles(0, 0, math.rad(35)), straw)
+  end
+  for _, nameOfLeg in ipairs({"Left Leg", "Right Leg"}) do
+   local leg = model[nameOfLeg] leg.Color = head.Color
+   clothing("VacationShorts", Vector3.new(1.04, 1, 1.04), leg, CFrame.new(0, 0.5, 0), Color3.fromRGB(237, 218, 174))
+   clothing("Sandal", Vector3.new(1.06, 0.16, 1.18), leg, CFrame.new(0, -0.96, -0.06), Color3.fromRGB(104, 73, 43))
+  end
+  clothing("VacationBackpack", Vector3.new(1.3, 1.4, 0.55), torso, CFrame.new(0, 0, 0.8), Color3.fromRGB(207, 115, 68))
+ end
+ hum.DisplayDistanceType, hum.BreakJointsOnDeath = Enum.HumanoidDisplayDistanceType.None, false
+ hum.WalkSpeed, hum.AutoRotate = 7, true
+ for _, part in ipairs(model:GetDescendants()) do
+  if part:IsA("BasePart") then
+   part.Anchored = false
+   part.CollisionGroup = "CEONPC"
+   part.CanCollide = part.Name == "Torso" or part.Name == "Head"
+  end
+ end
+ if model:IsDescendantOf(workspace) then model.PrimaryPart:SetNetworkOwner(nil) end
+ local animator = hum:FindFirstChildOfClass("Animator") or Instance.new("Animator", hum)
+ local tracks = {}
+ if model:IsDescendantOf(workspace) then
+  for key, id in pairs({Walk = "180426354", Idle = "180435571"}) do
+   local animation = Instance.new("Animation") animation.AnimationId = "rbxassetid://" .. id
+   local ok, track = pcall(function() return animator:LoadAnimation(animation) end)
+   animation:Destroy()
+   if ok then track.Looped = true track.Priority = key == "Walk" and Enum.AnimationPriority.Movement or Enum.AnimationPriority.Idle tracks[key] = track
+   else warn("[NPC] Animation unavailable: " .. tostring(track)) end
+  end
+ end
+ local function animate(speed)
+  local walking = speed > 0.2 and not model:GetAttribute("Carried")
+  local active, inactive = tracks[walking and "Walk" or "Idle"], tracks[walking and "Idle" or "Walk"]
+  if inactive and inactive.IsPlaying then inactive:Stop(0.15) end
+  if active then
+   if not active.IsPlaying then active:Play(0.15) end
+   if walking then active:AdjustSpeed(math.clamp(speed / 14.5, 0.2, 1.5)) end
+  end
+ end
+ hum.Running:Connect(animate)
+ model:GetAttributeChangedSignal("Carried"):Connect(function()
+  local carried = model:GetAttribute("Carried") == true
+  hum:Move(Vector3.zero) model.PrimaryPart.Anchored = carried
+  for _, part in ipairs(model:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = not carried and (part.Name == "Torso" or part.Name == "Head") end end
+  animate(0)
+ end)
+ animate(0)
+ model:SetAttribute("StandardRobloxRig", template ~= nil)
  CollectionService:AddTag(model, "CEONPC")
  return model
 end

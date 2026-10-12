@@ -8,10 +8,12 @@ local function check(ok, message) count += 1 assert(ok, "[Visual checks] " .. me
 local ok, failure = pcall(function()
  local npc = Characters.Create(folder, "Touriste", CFrame.new(), Color3.new(0, 1, 0))
  check(npc:FindFirstChildOfClass("Humanoid") ~= nil, "humanoid exists")
- check(npc.PrimaryPart.Name == "HumanoidRootPart" and npc.PrimaryPart.Anchored, "stable root")
+ check(npc.PrimaryPart.Name == "HumanoidRootPart" and not npc.PrimaryPart.Anchored, "physical walking root")
  local motors = 0 for _, item in ipairs(npc:GetDescendants()) do if item:IsA("Motor6D") then motors += 1 end end
  check(motors == 6, "six articulation joints")
- check(npc:FindFirstChild("Backpack") and npc:FindFirstChild("HatBrim"), "tourist accessories")
+ check(npc.Humanoid:FindFirstChildOfClass("Animator") ~= nil, "server animation controller")
+ check(npc:GetAttribute("Tourist") == true, "tourist identity")
+ check(npc:FindFirstChild("VacationHatBrim") and npc:FindFirstChild("VacationShorts") and npc:FindFirstChild("VacationBackpack"), "distinct tourist outfit")
  for _, kind in ipairs({"Car", "TourBus", "DeliveryVan"}) do
   local model = VehicleArt.Build(folder, CFrame.new(), kind, 5, Color3.new(1, 0, 0), W.Part)
   check(model.PrimaryPart.Name == "Chassis", kind .. " pivot")

@@ -25,6 +25,7 @@ function P.Init(d, now)
 end
 function P.Offline(d, now, sale)
  P.Init(d, now)
+ if not d.Staff or (d.Staff.Cashier or 0) < 1 then d.LastSeen = now return 0, 0 end
  local elapsed = math.clamp(now - d.LastSeen, 0, 4 * 3600)
  -- Only sell existing inventory. No free production, no double-counted elapsed time.
  local units = math.min(d.Stock, math.floor(elapsed / 120))

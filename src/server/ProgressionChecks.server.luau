@@ -35,6 +35,9 @@ d.Cash = 500
 check(P.Action(d, "Marketing", nil, now, 180) and d.Cash == 400, "marketing charged")
 check(not P.Action(d, "Marketing", nil, now, 180) and d.Cash == 400, "cannot buy overlapping campaign")
 d.Stock, d.LastSeen = 10, now - 1200
+check(P.Offline(d, now, E.Sale) == 0 and d.Stock == 10, "no offline checkout without cashier")
+d.Staff = {Cashier = 1}
+d.LastSeen = now - 1200
 local earned, units = P.Offline(d, now, E.Sale)
 check(earned == 200 and units == 10 and d.Stock == 0, "offline consumes real stock at half price")
 check(P.Offline(d, now, E.Sale) == 0, "offline cannot duplicate")
