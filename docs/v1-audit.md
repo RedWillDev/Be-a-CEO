@@ -6,6 +6,8 @@ Cet audit distingue présence du code et validation réelle. La V1 n'est pas enc
 
 ### Vacanciers et portage (à valider par le joueur)
 
+Correction colis : suppression du repositionnement une fois par seconde. Le colis est attaché au personnage par un joint, sans collision et sans masse ajoutée, avec transition de prise en main de 0,3 seconde. Dimensions adaptées aux bras ; pose des bras activée pour colis et vacanciers, avec retour progressif à l'animation normale. Le joint et la pose sont retirés au dépôt, au rangement ou à l'interruption. Le retour du colis à son emplacement de livraison lors d'une interruption reste le comportement de sécurité existant. Construction locale uniquement ; rendu en jeu à vérifier par le joueur.
+
 Tenue distincte : chapeau, lunettes, chemise à motifs, short, sandales et sac. Les vacanciers parcourent désormais le trottoir entier à une vitesse proche des passants. Seuls les vacanciers disposent du prompt de portage parmi ces piétons ; le VIP garde son interaction spéciale existante.
 
 La documentation Roblox des animations par défaut ne fournit pas de portage à deux personnages. Une pose procédurale spécifique a donc été ajoutée (bras du porteur relevés, jambes du vacancier repliées), sans animation tierce ni achat. Le suivi du vacancier passe de la boucle économique à une mise à jour à chaque image serveur. La marche Roblox reste inchangée. Relâcher le vacancier le remet en promenade au lieu de le supprimer ; une limite de durée nettoie les vacanciers sortis du groupe de leur événement.

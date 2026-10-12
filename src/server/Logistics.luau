@@ -1,5 +1,6 @@
 local Players = game:GetService("Players")
 local Studio = game:GetService("RunService"):IsStudio()
+local TweenService = game:GetService("TweenService")
 local L = {}
 function L.Start(sessions, W, E, P, send, valid, otherCarry)
  local self = {Parcels = {}, Carries = {}}
@@ -11,7 +12,15 @@ function L.Start(sessions, W, E, P, send, valid, otherCarry)
  end
  local function reset(player)
   local carry = self.Carries[player]
-  if carry and carry.Character then carry.Character:SetAttribute("CarryingTourist", nil) end
+  if carry then
+   if carry.PickupTween then carry.PickupTween:Cancel() carry.PickupTween = nil end
+   if carry.Grip then carry.Grip:Destroy() carry.Grip = nil end
+   if carry.Owner and carry.Model.Parent then carry.Model.PrimaryPart.Anchored = true end
+   if carry.Character then
+    carry.Character:SetAttribute("CarryingTourist", nil)
+    carry.Character:SetAttribute("CarryingParcel", nil)
+   end
+  end
   local h = player.Character and player.Character:FindFirstChildOfClass("Humanoid") if h then h.WalkSpeed = 16 end
   self.Carries[player] = nil
  end
@@ -19,6 +28,7 @@ function L.Start(sessions, W, E, P, send, valid, otherCarry)
  function self:Drop(player)
   local carry = self.Carries[player]
   if not carry then return end
+  reset(player)
   if carry.Owner then
    carry.Carrier = nil
    if carry.Model.Parent then carry.Model:PivotTo(carry.Home) carry.Prompt.Enabled = true end
@@ -27,7 +37,6 @@ function L.Start(sessions, W, E, P, send, valid, otherCarry)
    if carry.Prompt then carry.Prompt.Enabled = true end
    W.TouristWalk(carry.Model)
   end
-  reset(player)
  end
  function self:Remove(player)
   self:Drop(player)
@@ -61,9 +70,9 @@ function L.Start(sessions, W, E, P, send, valid, otherCarry)
  end
  function self:Spawn(owner, s)
   local m = Instance.new("Model") m.Name, m.Parent = "DeliveryParcel", W.City
-  local cf = W.Plots[s.Plot].CF * CFrame.new(9, 2, -19)
-  local part = W.Part(m, "Box", Vector3.new(3, 3, 3), cf, Color3.fromRGB(181, 132, 81))
-  part.CanCollide = false m.PrimaryPart = part
+  local cf = W.Plots[s.Plot].CF * CFrame.new(9, 1.15, -19)
+  local part = W.Part(m, "Box", Vector3.new(2.4, 1.8, 1.8), cf, Color3.fromRGB(181, 132, 81))
+  part.CanCollide, part.CanTouch, part.Massless = false, false, true m.PrimaryPart = part
   local prompt = Instance.new("ProximityPrompt")
   prompt.ActionText, prompt.ObjectText = "Porter", "Colis de " .. owner.DisplayName
   prompt.HoldDuration, prompt.MaxActivationDistance, prompt.RequiresLineOfSight, prompt.Parent = 0.6, 9, false, part
@@ -79,6 +88,19 @@ function L.Start(sessions, W, E, P, send, valid, otherCarry)
    end
    if d.Product ~= s.Data.Parcel.Product then send(player, "Ce colis ne correspond pas au produit de ta boutique.") return end
    entry.Carrier = player entry.LastPosition = r.Position self.Carries[player] = entry prompt.Enabled = false h.WalkSpeed = 11
+   entry.Character = player.Character
+   player.Character:SetAttribute("CarryingParcel", true)
+   -- Attach to the character assembly: no server-position updates during walking.
+   -- Tween the grip in character space for the pickup, then keep a fixed hold.
+   local grip = Instance.new("Motor6D")
+   grip.Name, grip.Part0, grip.Part1 = "ParcelGrip", r, part
+   grip.C0 = r.CFrame:ToObjectSpace(part.CFrame)
+   part.Anchored = false
+   grip.Parent = r entry.Grip = grip
+   local scale = math.clamp((h.HipHeight + r.Size.Y / 2) / 3, 0.8, 1.25)
+   if h.RigType == Enum.HumanoidRigType.R6 then scale = 1 end
+   entry.PickupTween = TweenService:Create(grip, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {C0 = CFrame.new(0, -0.15 * scale, -1.7 * scale)})
+   entry.PickupTween:Play()
    send(player, "Porte le colis jusqu'au comptoir de ta boutique. Pas de voiture ni téléportation.")
   end)
  end
@@ -116,7 +138,6 @@ function L.Start(sessions, W, E, P, send, valid, otherCarry)
    if not r or not valid(player) or not carry.Model.Parent or (carry.Owner and not valid(carry.Owner)) or (carry.Started and os.clock() - carry.Started > 90) or (r and carry.LastPosition and (r.Position - carry.LastPosition).Magnitude > 40) then self:Drop(player)
    else
     carry.LastPosition = r.Position
-    if carry.Owner then carry.Model:PivotTo(r.CFrame * CFrame.new(0, 1.5, -2)) end
     local counter = W.Plots[s.Plot].CF * CFrame.new(0, 2, 0)
     if (r.Position - counter.Position).Magnitude < 9 then
      if carry.Owner then self:Receive(carry.Owner, player)

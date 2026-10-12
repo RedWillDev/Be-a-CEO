@@ -29,7 +29,7 @@ RunService.PreSimulation:Connect(function(dt)
  local wanted = {}
  for _, player in ipairs(Players:GetPlayers()) do
   local c = player.Character
-  if c and c:GetAttribute("CarryingTourist") then wanted[c] = false end
+  if c and (c:GetAttribute("CarryingTourist") or c:GetAttribute("CarryingParcel")) then wanted[c] = false end
  end
  for _, m in ipairs(CollectionService:GetTagged("CEONPC")) do
   if m:GetAttribute("Tourist") and m:GetAttribute("Carried") then wanted[m] = true end
@@ -42,8 +42,9 @@ RunService.PreSimulation:Connect(function(dt)
  end
  for model, state in pairs(active) do
   if wanted[model] == nil then
-   for j in pairs(state.Joints) do if j.Parent then j.Transform = CFrame.identity end end
-   active[model] = nil
+   state.Weight = math.max(0, state.Weight - dt * 7)
+   for j, target in pairs(state.Joints) do if j.Parent then j.Transform = j.Transform:Lerp(target, state.Weight) end end
+   if state.Weight == 0 or not model.Parent then active[model] = nil end
   end
  end
 end)
