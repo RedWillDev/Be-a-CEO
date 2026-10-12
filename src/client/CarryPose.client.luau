@@ -29,12 +29,11 @@ RunService.PreSimulation:Connect(function(dt)
  local wanted = {}
  for _, player in ipairs(Players:GetPlayers()) do
   local c = player.Character
-  -- Parcel R15 arms are solved by IKControl against the box, not fixed angles.
-  if c and c:GetAttribute("CarryingTourist") then wanted[c] = false end
-  if c and c:GetAttribute("CarryingParcel") and c:FindFirstChild("Torso") then wanted[c] = false end
+  -- All R15 carry types use the module's IK hand targets. R6 has rigid arms.
+  if c and c:GetAttribute("CarryKind") and c:FindFirstChild("Torso") then wanted[c] = false end
  end
  for _, m in ipairs(CollectionService:GetTagged("CEONPC")) do
-  if m:GetAttribute("Tourist") and m:GetAttribute("Carried") then wanted[m] = true end
+  if m:GetAttribute("Carried") then wanted[m] = true end
  end
  for model, passenger in pairs(wanted) do
   if not active[model] then active[model] = {Joints = pose(model, passenger), Weight = 0} end
@@ -43,11 +42,12 @@ RunService.PreSimulation:Connect(function(dt)
   for j, target in pairs(state.Joints) do
    if j.Parent then
     local root = model:FindFirstChild("HumanoidRootPart")
-    local grip = root and root:FindFirstChild("ParcelGrip")
-    if model:GetAttribute("CarryingParcel") and grip and grip.Part1 and (j.Name == "Left Shoulder" or j.Name == "Right Shoulder") then
-     local box = grip.Part1
-     local side = j.Name == "Left Shoulder" and -1 or 1
-     local handPoint = box.CFrame:PointToWorldSpace(Vector3.new(side * (box.Size.X / 2 + 0.2), -0.15, 0))
+    local grip = root and root:FindFirstChild("CarryGrip")
+    if model:GetAttribute("CarryKind") and grip and grip.Part1 and (j.Name == "Left Shoulder" or j.Name == "Right Shoulder") then
+     local side = j.Name == "Left Shoulder" and "Left" or "Right"
+     local attachment = grip.Part1:FindFirstChild(side .. "CarryHand")
+     if not attachment then continue end
+     local handPoint = attachment.WorldPosition
      local shoulder = j.Part0.CFrame * j.C0
      local delta = handPoint - shoulder.Position
      if delta.Magnitude > 0.01 then

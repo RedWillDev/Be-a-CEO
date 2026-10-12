@@ -1,6 +1,6 @@
 local Players = game:GetService("Players")
 local Studio = game:GetService("RunService"):IsStudio()
-local TweenService = game:GetService("TweenService")
+local Carry = require(script.Parent.Carry)
 local L = {}
 function L.Start(sessions, W, E, P, send, valid, otherCarry)
  local self = {Parcels = {}, Carries = {}}
@@ -12,20 +12,7 @@ function L.Start(sessions, W, E, P, send, valid, otherCarry)
  end
  local function reset(player)
   local carry = self.Carries[player]
-  if carry then
-   if carry.HandControls then
-    for _, item in ipairs(carry.HandControls) do item:Destroy() end
-    carry.HandControls = nil
-   end
-   if carry.PickupTween then carry.PickupTween:Cancel() carry.PickupTween = nil end
-   if carry.Grip then carry.Grip:Destroy() carry.Grip = nil end
-   if carry.Owner and carry.Model.Parent then carry.Model.PrimaryPart.Anchored = true end
-   if carry.Character then
-    carry.Character:SetAttribute("CarryingTourist", nil)
-    carry.Character:SetAttribute("CarryingParcel", nil)
-   end
-  end
-  local h = player.Character and player.Character:FindFirstChildOfClass("Humanoid") if h then h.WalkSpeed = 16 end
+  if carry and carry.Handle then carry.Handle:Detach() carry.Handle = nil end
   self.Carries[player] = nil
  end
  function self:Busy(player) return self.Carries[player] ~= nil end
@@ -91,37 +78,8 @@ function L.Start(sessions, W, E, P, send, valid, otherCarry)
     if not Studio or not d.Rivalry or not s.Data.Rivalry or d.Level < 2 or s.Data.Level < 2 or os.clock() - entry.Created < 20 then send(player, "Colis protégé. Vol : test Studio, entreprises volontaires niveau 2+, après 20 s.") return end
    end
    if d.Product ~= s.Data.Parcel.Product then send(player, "Ce colis ne correspond pas au produit de ta boutique.") return end
-   entry.Carrier = player entry.LastPosition = r.Position self.Carries[player] = entry prompt.Enabled = false h.WalkSpeed = 11
-   entry.Character = player.Character
-   player.Character:SetAttribute("CarryingParcel", true)
-   -- Attach to the character assembly: no server-position updates during walking.
-   -- Tween the grip in character space for the pickup, then keep a fixed hold.
-   local grip = Instance.new("Motor6D")
-   grip.Name, grip.Part0, grip.Part1 = "ParcelGrip", r, part
-   grip.C0 = r.CFrame:ToObjectSpace(part.CFrame)
-   part.Anchored = false
-   grip.Parent = r entry.Grip = grip
-   local scale = math.clamp((h.HipHeight + r.Size.Y / 2) / 3, 0.8, 1.25)
-   if h.RigType == Enum.HumanoidRigType.R6 then scale = 1 end
-   entry.PickupTween = TweenService:Create(grip, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {C0 = CFrame.new(0, -0.15 * scale, -1.7 * scale)})
-   entry.PickupTween:Play()
-   entry.HandControls = {}
-   if h.RigType == Enum.HumanoidRigType.R15 then
-    for _, side in ipairs({"Left", "Right"}) do
-     local hand, upper = player.Character:FindFirstChild(side .. "Hand"), player.Character:FindFirstChild(side .. "UpperArm")
-     if hand and upper then
-      local target = Instance.new("Attachment") target.Name = side .. "ParcelHand"
-      target.Position = Vector3.new((side == "Left" and -1 or 1) * (part.Size.X / 2 + hand.Size.X / 2 - 0.05), -0.15, 0.15)
-      target.Parent = part
-      local ik = Instance.new("IKControl")
-      ik.Name, ik.Type = side .. "ParcelIK", Enum.IKControlType.Position
-      ik.ChainRoot, ik.EndEffector, ik.Target = upper, hand, target
-      ik.SmoothTime, ik.Weight, ik.Priority = 0.08, 1, 10
-      ik.Parent = h
-      table.insert(entry.HandControls, ik) table.insert(entry.HandControls, target)
-     end
-    end
-   end
+   entry.Handle = Carry.new(player.Character, m, "Parcel"):Attach()
+   entry.Carrier = player entry.LastPosition = r.Position self.Carries[player] = entry prompt.Enabled = false
    send(player, "Entre dans ta boutique avec le colis : il sera immédiatement rangé en stock.")
   end)
  end
@@ -139,9 +97,8 @@ function L.Start(sessions, W, E, P, send, valid, otherCarry)
     model:SetAttribute("CarryExpiryScheduled", true)
     game:GetService("Debris"):AddItem(model, 240)
    end
-   model:SetAttribute("Carried", true)
-   player.Character:SetAttribute("CarryingTourist", true)
-   self.Carries[player] = {Model = model, Tourist = true, Prompt = prompt, Character = player.Character, Started = os.clock(), LastPosition = r.Position}
+   local handle = Carry.new(player.Character, model, "Tourist"):Attach()
+   self.Carries[player] = {Handle = handle, Model = model, Tourist = true, Prompt = prompt, Character = player.Character, Started = os.clock(), LastPosition = r.Position}
    h.WalkSpeed = 11 send(player, "Ramène le vacancier à ton comptoir pour une vente x2 !")
   end)
  end
@@ -178,12 +135,6 @@ function L.Start(sessions, W, E, P, send, valid, otherCarry)
  -- Check delivery every physics frame, independently of the one-second economy tick.
  game:GetService("RunService").Heartbeat:Connect(function()
   self:UpdateCarries()
-  for player, carry in pairs(self.Carries) do
-   if carry.Tourist and carry.Model.Parent then
-    local r = root(player)
-    if r then carry.Model:PivotTo(r.CFrame * CFrame.new(0, 0.4, -1.7) * CFrame.Angles(0, math.pi / 2, 0)) end
-   end
-  end
  end)
  return self
 end

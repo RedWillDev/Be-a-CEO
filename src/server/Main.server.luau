@@ -7,6 +7,7 @@ local E = require(script.Parent.Economy)
 local P = require(script.Parent.Progression)
 local Staff = require(script.Parent.Staff)
 local Logistics = require(script.Parent.Logistics)
+local Carry = require(script.Parent.Carry)
 local W = require(script.Parent.World)
 local remote = Instance.new("RemoteEvent") remote.Name = "Command" remote.Parent = shared
 local stateRemote = Instance.new("RemoteEvent") stateRemote.Name = "State" stateRemote.Parent = shared
@@ -103,6 +104,7 @@ local function join(player)
  send(player, offlineEarned > 0 and ("Bon retour ! Ventes hors ligne : +" .. offlineEarned .. " $ (stock existant, moitié du prix, 4 h maximum).") or "Bienvenue ! Choisis un produit puis commande ton premier lot sur MarketBridge.")
 end
 local function dropVIP()
+ if vip then Carry.Release(vip) end
  if carrier and carrier.Character then local h = carrier.Character:FindFirstChildOfClass("Humanoid") if h then h.WalkSpeed = 16 end end
  carrier = nil
  if vip then vip:Destroy() vip = nil end
@@ -203,7 +205,8 @@ end
 W.CheckIn = function(player, npc, bonus, kind)
  local s = sessions[player]
  if not valid(player) or s.Visitor or s.Data.Stock < 1 then return false end
- s.Visitor = npc npc:SetAttribute("Carried", false) npc:SetAttribute("Shopping", true)
+ Carry.Release(npc)
+ s.Visitor = npc npc:SetAttribute("Shopping", true)
  W.Route(npc, {(W.Plots[s.Plot].CF * CFrame.new(0, 3.5, -5)).Position}, function(reached) arrived(player, s, npc, reached, bonus, kind) end)
  return true
 end
@@ -246,7 +249,8 @@ task.spawn(function()
     local s = sessions[player] local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
     if not vip or carrier or logistics:Busy(player) or not s or not s.Ready or (not studio and os.time() - s.LastSaved > 110) or not root or (root.Position - vip.PrimaryPart.Position).Magnitude > 12 then return end
     if s.Data.Stock < 1 then send(player, "Il te faut du stock pour accueillir ce client.") return end
-    carrier = player prompt.Enabled = false vip:SetAttribute("Carried", true)
+    Carry.new(player.Character, vip, "VIP"):Attach()
+    carrier = player prompt.Enabled = false
     player.Character.Humanoid.WalkSpeed = 11
     send(player, "Ramène le VIP à ton comptoir : une vente à triple prix !")
    end)
@@ -257,7 +261,6 @@ task.spawn(function()
    local s = sessions[carrier]
    if not root or not hum or hum.Health <= 0 or hum.SeatPart or not s or (not studio and os.time() - s.LastSaved > 110) then dropVIP()
    else
-    vip:PivotTo(root.CFrame * CFrame.new(0, 3, 1))
     if (root.Position - W.Plots[s.Plot].CF.Position).Magnitude < 16 then
      if W.CheckIn(carrier, vip, 3, "VIP") then
       local player = carrier hum.WalkSpeed = 16 vip, carrier = nil, nil

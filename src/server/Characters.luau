@@ -151,8 +151,8 @@ function Characters.Create(parent, name, cf, color)
  hum.Running:Connect(animate)
  model:GetAttributeChangedSignal("Carried"):Connect(function()
   local carried = model:GetAttribute("Carried") == true
-  hum:Move(Vector3.zero) model.PrimaryPart.Anchored = carried
-  for _, part in ipairs(model:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = not carried and (part.Name == "Torso" or part.Name == "Head") end end
+  -- Carry owns all anchoring/collision changes; animation must never anchor its carrier.
+  hum:Move(Vector3.zero)
   animate(0)
  end)
  animate(0)
