@@ -307,12 +307,30 @@ function W.CityEvent(event)
   for i = 1, 6 do W.Part(m, "Cargo", Vector3.new(3, 3, 3), CFrame.new(-10 + i * 3, 22.5, -117), Color3.fromRGB(177, 127, 76), Enum.Material.Wood) end
  end
 end
-function W.Delivery(index)
+function W.Delivery(index, delivered)
  local plot = W.Plots[index]
  local cf = CFrame.new(plot.CF.X, 22, index <= 4 and -14 or 14) * CFrame.Angles(0, index <= 4 and math.pi / 2 or -math.pi / 2, 0)
- local m = VehicleArt.Build(W.City, cf, "DeliveryVan", 1, cream, W.Part)
- W.Sign(m, "MARKETBRIDGE", cf * CFrame.new(0, 3, 7.65) * CFrame.Angles(0, math.pi, 0), Vector3.new(5.5, 1, 0.1), C.Palette[1])
- task.delay(5, function() if m.Parent then W.MoveVehicle(m, cf * CFrame.new(0, 0, -70), 5, function() m:Destroy() end) end end)
+ local direction = index <= 4 and 1 or -1
+ local start = CFrame.new(direction * 190, cf.Y, cf.Z) * cf.Rotation
+ local destination = CFrame.new(-direction * 190, cf.Y, cf.Z) * cf.Rotation
+ local m = VehicleArt.Build(W.City, start, "DeliveryVan", 1, cream, W.Part)
+ W.Sign(m, "MARKETBRIDGE", start * CFrame.new(0, 3, 7.65) * CFrame.Angles(0, math.pi, 0), Vector3.new(5.5, 1, 0.1), C.Palette[1])
+ W.MoveVehicle(m, cf, math.max(2, (start.Position - cf.Position).Magnitude / 40), function()
+  task.delay(1, function()
+   if not m.Parent then return end
+   local cargo = Instance.new("Model") cargo.Name, cargo.Parent = "UnloadingParcel", m
+   local box = W.Part(cargo, "Box", Vector3.new(2.4, 1.8, 1.8), cf * CFrame.new(0, 1, 8), Color3.fromRGB(181, 132, 81))
+   box.CanCollide, box.CanTouch = false, false cargo.PrimaryPart = box
+   W.MoveVehicle(cargo, plot.CF * CFrame.new(9, 1.15, -19), 1.2, function()
+    cargo:Destroy()
+    if delivered then delivered() end
+    task.delay(1, function()
+     if m.Parent then W.MoveVehicle(m, destination, math.max(2, (destination.Position - cf.Position).Magnitude / 40), function() m:Destroy() end) end
+    end)
+   end)
+  end)
+ end)
+ return m
 end
 function W.Car(index, tier, player)
  local plot = W.Plots[index]

@@ -4,6 +4,12 @@ Cet audit distingue présence du code et validation réelle. La V1 n'est pas enc
 
 ## Correction clients et caisse — 12 octobre 2026
 
+### Livraisons et diversité — essais joueur à venir
+
+Camionnette venant du bord du boulevard, arrêt devant la parcelle, carton animé du véhicule au point de livraison puis départ vers l'autre extrémité. Le carton de déchargement n'est pas interactif ; le vrai colis est créé seulement après son arrivée. L'ordre reste en attente et sauvegardable jusqu'au dépôt ; les callbacks vérifient l'identité de session et de commande pour éviter un double dépôt. Une livraison interrompue est relancée sans achat supplémentaire. Le délai fournisseur correspond maintenant à l'expédition, suivi du trajet et du déchargement ; l'interface le distingue.
+
+Les teintes de peau ne dépendent plus de l'indice pair/impair des PNJ. Chaque trottoir dispose d'un sac mélangé des six teintes, rempli après épuisement. Les tenues utilisent indépendamment dix couleurs (rouge, bleu, blanc, jaune, vert, violet, orange, rose, turquoise, sombre) sur chaque côté. Les tenues professionnelles restent distinctes. Vérification de construction locale uniquement ; aucune partie lancée par l'assistant.
+
 ### Réceptionnaire actif — essais joueur à venir
 
 Le rangement temporisé 12/8/4 secondes est remplacé par un trajet réel. Le réceptionnaire attend à droite de l'entrée, part après 3/2/1 secondes selon son rang, atteint le colis, le prend avec `Carry`, puis revient au point de rangement intérieur. Sa vitesse est de 8/10/12 studs par seconde. Le stock n'est crédité qu'après arrivée vérifiée, via la fonction unique `Receive`. L'interface décrit désormais ce comportement et un indicateur affiche sa tâche.

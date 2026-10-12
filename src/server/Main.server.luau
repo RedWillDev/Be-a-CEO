@@ -117,6 +117,7 @@ Players.PlayerRemoving:Connect(function(player)
  if not s then return end
  if carrier == player then dropVIP() end
  logistics:Remove(player)
+ if s.Delivery and s.Delivery.Model then s.Delivery.Model:Destroy() end
  customers:Clear(s)
  if cars[player] then cars[player].Model:Destroy() cars[player] = nil end
  if s.Ready then s.Ready = false save(player, true) end
@@ -266,8 +267,26 @@ task.spawn(function()
    P.Init(d, now)
    Staff.Init(d)
    if d.Order then
-    d.Order.Remaining -= 1
-    if d.Order.Remaining <= 0 then d.Parcel = {Units = 10, Quality = d.Order.Quality, Product = d.Order.Product or d.Product, Paid = d.Order.Paid or 0} d.Order = nil W.Delivery(s.Plot) send(player, "Colis devant la porte ! Porte-le jusqu'à ton comptoir pour remplir le stock.") end
+    d.Order.Remaining = math.max(0, d.Order.Remaining - 1)
+    if s.Delivery and (not s.Delivery.Model.Parent or os.clock() - s.Delivery.Started > 25) then
+     s.Delivery.Model:Destroy() s.Delivery = nil
+    end
+    if d.Order.Remaining <= 0 and not s.Delivery then
+     local order = d.Order
+     local delivery = {Started = os.clock()}
+     s.Delivery = delivery
+     delivery.Model = W.Delivery(s.Plot, function()
+      -- Keep the order durable until arrival. Old callbacks cannot deliver twice.
+      if sessions[player] ~= s or s.Delivery ~= delivery or d.Order ~= order then return end
+      s.Delivery = nil
+      if not valid(player) then return end
+      d.Parcel = {Units = 10, Quality = order.Quality, Product = order.Product or d.Product, Paid = order.Paid or 0}
+      d.Order = nil
+      logistics:Spawn(player, s)
+      send(player, "Livraison déposée ! Ramène le colis dans ta boutique pour remplir le stock.")
+     end)
+     send(player, "La camionnette arrive. Le colis sera disponible après son arrêt et son déchargement.")
+    end
    end
    local interval = d.PriceMode == 3 and 7 or d.PriceMode == 1 and 3 or 5
    interval = math.max(2, interval - math.max(0, d.Staff.Cashier - 1))

@@ -11,12 +11,25 @@ local success, template = pcall(function()
 end)
 description:Destroy()
 if not success then warn("[NPC] Roblox avatar unavailable; using local R6 fallback: " .. tostring(template)) template = nil end
-local skins = {Color3.fromRGB(221, 174, 130), Color3.fromRGB(146, 95, 65), Color3.fromRGB(244, 207, 172), Color3.fromRGB(92, 63, 49)}
+local skins = {Color3.fromRGB(221, 174, 130), Color3.fromRGB(146, 95, 65), Color3.fromRGB(244, 207, 172), Color3.fromRGB(92, 63, 49), Color3.fromRGB(185, 133, 94), Color3.fromRGB(116, 76, 56)}
+local outfits = {Color3.fromRGB(213, 64, 64), Color3.fromRGB(57, 114, 219), Color3.fromRGB(241, 241, 231), Color3.fromRGB(234, 184, 54), Color3.fromRGB(68, 164, 107), Color3.fromRGB(153, 94, 198), Color3.fromRGB(232, 125, 62), Color3.fromRGB(219, 120, 171), Color3.fromRGB(53, 184, 183), Color3.fromRGB(44, 51, 65)}
+local random = Random.new()
+local bags = {}
+local function varied(palette, cf, category)
+ -- Independent shuffled bags per sidewalk: every palette repeats on BOTH sides.
+ local key = category .. (cf.Position.Z < 0 and "North" or "South")
+ local bag = bags[key]
+ if not bag or #bag == 0 then
+  bag = table.clone(palette)
+  for i = #bag, 2, -1 do local j = random:NextInteger(1, i) bag[i], bag[j] = bag[j], bag[i] end
+  bags[key] = bag
+ end
+ return table.remove(bag)
+end
 local serial = 0
-local function fallback(parent, name, cf, color)
+local function fallback(parent, name, cf, color, skin)
  serial += 1
  local model = Instance.new("Model") model.Name = name
- local skin = skins[(serial - 1) % #skins + 1]
  local function part(n, size, offset, tint)
   local p = Instance.new("Part") p.Name, p.Size, p.CFrame, p.Color = n, size, cf * CFrame.new(offset), tint
   p.CanCollide, p.CanTouch, p.Massless = false, false, true
@@ -73,13 +86,14 @@ local function fallback(parent, name, cf, color)
 end
 function Characters.Create(parent, name, cf, color)
  local model
+ local skin = varied(skins, cf, "Skin")
+ if name == "Passant" or name == "Touriste" then color = varied(outfits, cf, "Outfit") end
  if template then
   serial += 1
   model = template:Clone() model.Name = name
   for _, item in ipairs(model:GetDescendants()) do
    if item:IsA("BaseScript") then item:Destroy() end
   end
-  local skin = skins[(serial - 1) % #skins + 1]
   local colors = model:FindFirstChildOfClass("BodyColors") or Instance.new("BodyColors", model)
   colors.HeadColor3, colors.LeftArmColor3, colors.RightArmColor3 = skin, skin, skin
   colors.TorsoColor3 = color
@@ -88,7 +102,7 @@ function Characters.Create(parent, name, cf, color)
   model:PivotTo(cf * CFrame.new(0, 3.1, 0))
   model.Parent = parent
  else
-  model = fallback(parent, name, cf, color)
+  model = fallback(parent, name, cf, color, skin)
  end
  local hum = model:FindFirstChildOfClass("Humanoid")
  local function clothing(n, size, limb, offset, tint)
