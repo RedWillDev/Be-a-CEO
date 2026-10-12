@@ -8,6 +8,7 @@ local P = require(script.Parent.Progression)
 local Staff = require(script.Parent.Staff)
 local Logistics = require(script.Parent.Logistics)
 local Carry = require(script.Parent.Carry)
+local Customers = require(script.Parent.Customers)
 local W = require(script.Parent.World)
 local remote = Instance.new("RemoteEvent") remote.Name = "Command" remote.Parent = shared
 local stateRemote = Instance.new("RemoteEvent") stateRemote.Name = "State" stateRemote.Parent = shared
@@ -19,6 +20,7 @@ local trend, nextTrend, vip, carrier = 1, os.clock() + 90, nil, nil
 local cityEvent = {Kind = "Préparation", Product = 1, Ends = os.time() + 60, Units = 0, Target = 30}
 local eventNumber = 0
 local logistics
+local customers
 W.Build()
 W.CityEvent(cityEvent)
 local function send(player, message)
@@ -32,12 +34,13 @@ local function send(player, message)
   end
  end
  table.sort(board, function(a, b) if a.Wins == b.Wins then return a.Name < b.Name end return a.Wins > b.Wins end)
- stateRemote:FireClient(player, {Data = s.Data, StaffRoles = Staff.Roles, Waiting = s.Waiting ~= nil, Board = board, MarketShare = total > 0 and math.floor((s.SessionDisputed or 0) / total * 100) or 0, Progression = P.View(s.Data, os.time()), Event = cityEvent, Plot = s.Plot, Trend = trend, TrendSeconds = math.max(0, math.ceil(nextTrend - os.clock())), Message = message, Saving = s.Status, Carrying = carrier == player or (logistics and logistics:Busy(player))})
+ stateRemote:FireClient(player, {Data = s.Data, StaffRoles = Staff.Roles, Waiting = s.Waiting ~= nil, QueueCount = #(s.Customers or {}), Board = board, MarketShare = total > 0 and math.floor((s.SessionDisputed or 0) / total * 100) or 0, Progression = P.View(s.Data, os.time()), Event = cityEvent, Plot = s.Plot, Trend = trend, TrendSeconds = math.max(0, math.ceil(nextTrend - os.clock())), Message = message, Saving = s.Status, Carrying = carrier == player or (logistics and logistics:Busy(player))})
 end
 local function valid(player)
  local s = sessions[player]
  return s and s.Ready and not s.Closing and (studio or os.time() - s.LastSaved <= 110)
 end
+customers = Customers.new(W, valid, send)
 logistics = Logistics.Start(sessions, W, E, P, send, valid, function(player) return carrier == player end)
 W.OnTourist = function(model) logistics:AddTourist(model) end
 local function save(player, release)
@@ -114,7 +117,7 @@ Players.PlayerRemoving:Connect(function(player)
  if not s then return end
  if carrier == player then dropVIP() end
  logistics:Remove(player)
- if s.Visitor then W.ReleaseCustomer(s.Visitor, s.Plot) end
+ customers:Clear(s)
  if cars[player] then cars[player].Model:Destroy() cars[player] = nil end
  if s.Ready then s.Ready = false save(player, true) end
  sessions[player] = nil W.UpdatePlot(s.Plot, nil, nil)
@@ -180,46 +183,33 @@ remote.OnServerEvent:Connect(function(player, action, value)
  end
  send(player, message)
 end)
-local function releaseVisitor(s)
- local npc = s.Visitor
- s.Visitor, s.Waiting, s.WaitingKind, s.ArrivedAt = nil, nil, nil, nil
- if npc then
-  local label = npc:FindFirstChild("CheckoutLabel", true) if label then label:Destroy() end
-  W.ReleaseCustomer(npc, s.Plot)
- end
-end
-local function arrived(player, s, npc, reached, bonus, kind)
- if s.Visitor ~= npc then return end
- if not reached or not valid(player) or s.Data.Stock < 1 then releaseVisitor(s) return end
- s.Waiting, s.WaitingKind, s.ArrivedAt = bonus, kind, os.clock()
- local label = Instance.new("BillboardGui") label.Name = "CheckoutLabel"
- label.Size, label.StudsOffset, label.AlwaysOnTop = UDim2.fromOffset(180, 38), Vector3.new(0, 3, 0), true label.Parent = npc.PrimaryPart
- local text = Instance.new("TextLabel") text.Size, text.BackgroundTransparency, text.Text = UDim2.fromScale(1, 1), 1, "En attente de paiement"
- text.TextColor3, text.TextSize, text.Parent = C.Palette[1], 16, label
- send(player, "Un client attend au comptoir : encaisse-le pour réaliser la vente.")
-end
 local function invite(player, s, bonus, kind)
- if s.Visitor or s.Data.Stock < 1 then return end
- s.Visitor = W.Visit(s.Plot, function(npc, reached) arrived(player, s, npc, reached, bonus, kind) end)
+ customers:Invite(player, s, bonus, kind)
 end
 W.CheckIn = function(player, npc, bonus, kind)
  local s = sessions[player]
- if not valid(player) or s.Visitor or s.Data.Stock < 1 then return false end
+ if not valid(player) then return false end
+ if not customers:CanJoin(s) then
+  if os.clock() >= (s.NextQueueNotice or 0) then
+   s.NextQueueNotice = os.clock() + 4
+   send(player, "File pleine ou stock réservé aux clients présents : encaisse un client avant de déposer celui que tu portes.")
+  end
+  return false
+ end
  Carry.Release(npc)
- s.Visitor = npc npc:SetAttribute("Shopping", true)
- W.Route(npc, {(W.Plots[s.Plot].CF * CFrame.new(0, 3.5, -5)).Position}, function(reached) arrived(player, s, npc, reached, bonus, kind) end)
+ customers:Admit(player, s, npc, bonus, kind)
  return true
 end
 local function checkout(player, s)
  if not s.Waiting or not s.Visitor or not s.Visitor.Parent then return false end
- local target = (W.Plots[s.Plot].CF * CFrame.new(0, 3.5, -5)).Position
+ local target = W.QueuePosition(s.Plot, 1)
  if (s.Visitor.PrimaryPart.Position - target).Magnitude > 5 then return false end
  local amount = E.Sale(s.Data, s.Waiting)
  if amount > 0 then
   P.OnSale(s.Data, s.WaitingKind, os.time())
   if s.WaitingKind == "Disputed" then s.SessionDisputed = (s.SessionDisputed or 0) + 1 end
  end
- releaseVisitor(s)
+ customers:Served(player, s)
  send(player, amount > 0 and ("Client encaissé : +" .. amount .. " $ !") or "Plus de stock : le client repart.")
  return amount > 0
 end
@@ -281,8 +271,7 @@ task.spawn(function()
    end
    local interval = d.PriceMode == 3 and 7 or d.PriceMode == 1 and 3 or 5
    interval = math.max(2, interval - math.max(0, d.Staff.Cashier - 1))
-   if s.Visitor and not s.Visitor.Parent then releaseVisitor(s) end
-   if s.Waiting and d.Stock < 1 then releaseVisitor(s) end
+   customers:Prune(player, s)
    if s.Waiting and d.Staff.Cashier > 0 and os.clock() - s.ArrivedAt >= interval then checkout(player, s) end
    if seconds % interval == 0 and d.Stock > 0 then
     local bonus = cityEvent.Kind == "Tendance surprise" and d.Product == cityEvent.Product and 1.3 or 1

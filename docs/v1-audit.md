@@ -4,6 +4,12 @@ Cet audit distingue présence du code et validation réelle. La V1 n'est pas enc
 
 ## Correction clients et caisse — 12 octobre 2026
 
+### File d'attente — implémentée, essais joueur à venir
+
+`Customers.luau` remplace la place unique par trois places FIFO devant la caisse. Les clients sont toujours des passants existants ; leurs places sont réservées pendant l'approche pour éviter la surcapacité. Seul le premier client arrivé à son emplacement peut être encaissé, manuellement ou par le caissier. Chaque suivant marche jusqu'à sa nouvelle place avant d'être servi ; son délai de service commence à son arrivée. Aucun prélèvement de stock ni paiement n'a lieu à l'entrée dans la file. Le nombre de réservations ne dépasse pas le stock au moment de l'admission.
+
+Indicateurs au-dessus des clients et compteur File 0/3 dans l'interface. Sortie par le côté du comptoir. La file est libérée en rupture de stock et au départ du propriétaire ; un trajet échoué ou un PNJ détruit ne conserve pas sa place. Les clients portés rejoignent la même file sans priorité et restent portés si elle est pleine. Construction locale et lecture du code uniquement : aucun test en jeu lancé par l'assistant.
+
 ### Vacanciers et portage (à valider par le joueur)
 
 Refonte : `Carry.luau` centralise `new`, `Attach`, `Detach` et `Release`, avec profils `Parcel` et `Person` (vacanciers/VIP). Chaque profil définit son décalage, son orientation et ses cibles de mains. Colis, vacanciers et VIP utilisent tous un Motor6D vers le personnage, sans boucle de repositionnement de l'entité portée. La classe gère masse, collisions, état du passager, vitesse, transition de prise et nettoyage à la mort/destruction. Les bras R15 utilisent des cibles de mains et de coudes ; les bras R6 rigides suivent les cibles sans coude articulé. L'animation du PNJ ne peut plus ancrer sa racine pendant le portage. Le rangement reste validé côté serveur. Construction locale contrôlée ; rendu et interactions laissés au joueur.

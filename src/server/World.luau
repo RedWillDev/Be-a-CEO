@@ -59,9 +59,17 @@ function W.ReleaseCustomer(model, index)
   model:SetAttribute("Shopping", false)
   W.Wander(model, {Vector3.new(-155, 23.7, z), Vector3.new(155, 23.7, z)}, 7, 1)
  end
- W.Route(model, {(cf * CFrame.new(0, 3, -19)).Position, Vector3.new(cf.X, 23.7, z)}, resume)
+ W.Route(model, {(cf * CFrame.new(-8, 3.5, -5)).Position, (cf * CFrame.new(-8, 3, -19)).Position, Vector3.new(cf.X - 8, 23.7, z)}, resume)
 end
-function W.Visit(index, arrived)
+function W.QueuePosition(index, slot)
+ return (W.Plots[index].CF * CFrame.new(5, 3.5, -3.5 - (slot - 1) * 4)).Position
+end
+function W.FaceQueue(model, index)
+ local position = model.PrimaryPart.Position
+ local forward = W.Plots[index].CF:VectorToWorldSpace(Vector3.new(0, 0, 1))
+ model:PivotTo(CFrame.lookAt(position, position + forward))
+end
+function W.Visit(index, arrived, slot)
  local cf = W.Plots[index].CF
  local z = index <= 4 and -31 or 31
  local candidate, best
@@ -74,7 +82,7 @@ function W.Visit(index, arrived)
  end
  if not candidate then return nil end
  candidate:SetAttribute("Shopping", true)
- W.Route(candidate, {Vector3.new(cf.X, 23.7, z), (cf * CFrame.new(0, 3, -19)).Position, (cf * CFrame.new(0, 3.5, -5)).Position}, function(reached)
+ W.Route(candidate, {Vector3.new(cf.X, 23.7, z), (cf * CFrame.new(5, 3, -19)).Position, W.QueuePosition(index, slot or 1)}, function(reached)
   arrived(candidate, reached)
  end)
  return candidate

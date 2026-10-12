@@ -148,7 +148,7 @@ state.OnClientEvent:Connect(function(snapshot)
  local previous = latest latest = snapshot
  local d = snapshot.Data
  cash.Text = string.format("%d $  •  %s", d.Cash, C.Levels[d.Level].Name)
- summary.Text = string.format("Stock %d • %d ventes • parcelle %d\nTendance : %s (%ds) • %s", d.Stock, d.Sales, snapshot.Plot, C.Products[snapshot.Trend].Name, snapshot.TrendSeconds, snapshot.Saving)
+ summary.Text = string.format("Stock %d • %d ventes • File %d/3 • parcelle %d\nTendance : %s (%ds) • %s", d.Stock, d.Sales, snapshot.QueueCount or 0, snapshot.Plot, C.Products[snapshot.Trend].Name, snapshot.TrendSeconds, snapshot.Saving)
  local changed = not previous
  if previous then
   for _, key in ipairs({"Product", "Supplier", "PriceMode", "Level", "Color", "Negotiated", "ActiveVehicle", "AutoOrder", "DailyClaim", "ManagerEnabled", "Rivalry"}) do if previous.Data[key] ~= d[key] then changed = true end end
