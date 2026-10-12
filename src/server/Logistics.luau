@@ -13,6 +13,10 @@ function L.Start(sessions, W, E, P, send, valid, otherCarry)
  local function reset(player)
   local carry = self.Carries[player]
   if carry then
+   if carry.HandControls then
+    for _, item in ipairs(carry.HandControls) do item:Destroy() end
+    carry.HandControls = nil
+   end
    if carry.PickupTween then carry.PickupTween:Cancel() carry.PickupTween = nil end
    if carry.Grip then carry.Grip:Destroy() carry.Grip = nil end
    if carry.Owner and carry.Model.Parent then carry.Model.PrimaryPart.Anchored = true end
@@ -101,7 +105,24 @@ function L.Start(sessions, W, E, P, send, valid, otherCarry)
    if h.RigType == Enum.HumanoidRigType.R6 then scale = 1 end
    entry.PickupTween = TweenService:Create(grip, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {C0 = CFrame.new(0, -0.15 * scale, -1.7 * scale)})
    entry.PickupTween:Play()
-   send(player, "Porte le colis jusqu'au comptoir de ta boutique. Pas de voiture ni téléportation.")
+   entry.HandControls = {}
+   if h.RigType == Enum.HumanoidRigType.R15 then
+    for _, side in ipairs({"Left", "Right"}) do
+     local hand, upper = player.Character:FindFirstChild(side .. "Hand"), player.Character:FindFirstChild(side .. "UpperArm")
+     if hand and upper then
+      local target = Instance.new("Attachment") target.Name = side .. "ParcelHand"
+      target.Position = Vector3.new((side == "Left" and -1 or 1) * (part.Size.X / 2 + hand.Size.X / 2 - 0.05), -0.15, 0.15)
+      target.Parent = part
+      local ik = Instance.new("IKControl")
+      ik.Name, ik.Type = side .. "ParcelIK", Enum.IKControlType.Position
+      ik.ChainRoot, ik.EndEffector, ik.Target = upper, hand, target
+      ik.SmoothTime, ik.Weight, ik.Priority = 0.08, 1, 10
+      ik.Parent = h
+      table.insert(entry.HandControls, ik) table.insert(entry.HandControls, target)
+     end
+    end
+   end
+   send(player, "Entre dans ta boutique avec le colis : il sera immédiatement rangé en stock.")
   end)
  end
  function self:AddTourist(model)
@@ -133,13 +154,17 @@ function L.Start(sessions, W, E, P, send, valid, otherCarry)
     if rank > 0 and not entry.Carrier and os.clock() - entry.Created >= 16 - rank * 4 then self:Receive(owner, owner) end
    end
   end
+ end
+ function self:UpdateCarries()
   for player, carry in pairs(self.Carries) do
    local r = root(player) local s = sessions[player]
    if not r or not valid(player) or not carry.Model.Parent or (carry.Owner and not valid(carry.Owner)) or (carry.Started and os.clock() - carry.Started > 90) or (r and carry.LastPosition and (r.Position - carry.LastPosition).Magnitude > 40) then self:Drop(player)
    else
     carry.LastPosition = r.Position
     local counter = W.Plots[s.Plot].CF * CFrame.new(0, 2, 0)
-    if (r.Position - counter.Position).Magnitude < 9 then
+    local inside = W.Plots[s.Plot].CF:PointToObjectSpace(r.Position)
+    local inShop = math.abs(inside.X) < 17 and inside.Z > -12 and inside.Z < 15 and inside.Y > 0 and inside.Y < 8
+    if (carry.Owner and inShop) or (not carry.Owner and (r.Position - counter.Position).Magnitude < 9) then
      if carry.Owner then self:Receive(carry.Owner, player)
      else
       if W.CheckIn and W.CheckIn(player, carry.Model, 2, "Touriste") then
@@ -150,8 +175,9 @@ function L.Start(sessions, W, E, P, send, valid, otherCarry)
    end
   end
  end
- -- Smooth passenger following is visual only; all delivery checks stay in Tick.
+ -- Check delivery every physics frame, independently of the one-second economy tick.
  game:GetService("RunService").Heartbeat:Connect(function()
+  self:UpdateCarries()
   for player, carry in pairs(self.Carries) do
    if carry.Tourist and carry.Model.Parent then
     local r = root(player)

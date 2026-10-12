@@ -6,6 +6,8 @@ Cet audit distingue présence du code et validation réelle. La V1 n'est pas enc
 
 ### Vacanciers et portage (à valider par le joueur)
 
+Dernier ajustement colis : réception vérifiée à chaque Heartbeat serveur dans l'emprise intérieure de la boutique du porteur (pas sur le trottoir ni dans une autre boutique). La réception manuelle ne dépend plus de la boucle économique à une seconde. Les contrôles de profil, produit, capacité et crédit unique restent centralisés dans `Receive`. Les mains R15 suivent deux cibles sur les côtés du carton par IKControl ; les bras R6 sont orientés vers les points de prise. Contrôles retirés à chaque interruption/rangement. Ces changements sont à valider visuellement par le joueur, sans essai lancé par l'assistant.
+
 Correction colis : suppression du repositionnement une fois par seconde. Le colis est attaché au personnage par un joint, sans collision et sans masse ajoutée, avec transition de prise en main de 0,3 seconde. Dimensions adaptées aux bras ; pose des bras activée pour colis et vacanciers, avec retour progressif à l'animation normale. Le joint et la pose sont retirés au dépôt, au rangement ou à l'interruption. Le retour du colis à son emplacement de livraison lors d'une interruption reste le comportement de sécurité existant. Construction locale uniquement ; rendu en jeu à vérifier par le joueur.
 
 Tenue distincte : chapeau, lunettes, chemise à motifs, short, sandales et sac. Les vacanciers parcourent désormais le trottoir entier à une vitesse proche des passants. Seuls les vacanciers disposent du prompt de portage parmi ces piétons ; le VIP garde son interaction spéciale existante.

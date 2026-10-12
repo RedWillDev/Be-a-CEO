@@ -29,7 +29,9 @@ RunService.PreSimulation:Connect(function(dt)
  local wanted = {}
  for _, player in ipairs(Players:GetPlayers()) do
   local c = player.Character
-  if c and (c:GetAttribute("CarryingTourist") or c:GetAttribute("CarryingParcel")) then wanted[c] = false end
+  -- Parcel R15 arms are solved by IKControl against the box, not fixed angles.
+  if c and c:GetAttribute("CarryingTourist") then wanted[c] = false end
+  if c and c:GetAttribute("CarryingParcel") and c:FindFirstChild("Torso") then wanted[c] = false end
  end
  for _, m in ipairs(CollectionService:GetTagged("CEONPC")) do
   if m:GetAttribute("Tourist") and m:GetAttribute("Carried") then wanted[m] = true end
@@ -38,7 +40,25 @@ RunService.PreSimulation:Connect(function(dt)
   if not active[model] then active[model] = {Joints = pose(model, passenger), Weight = 0} end
   local state = active[model]
   state.Weight = math.min(1, state.Weight + dt * 6)
-  for j, target in pairs(state.Joints) do if j.Parent then j.Transform = j.Transform:Lerp(target, state.Weight) end end
+  for j, target in pairs(state.Joints) do
+   if j.Parent then
+    local root = model:FindFirstChild("HumanoidRootPart")
+    local grip = root and root:FindFirstChild("ParcelGrip")
+    if model:GetAttribute("CarryingParcel") and grip and grip.Part1 and (j.Name == "Left Shoulder" or j.Name == "Right Shoulder") then
+     local box = grip.Part1
+     local side = j.Name == "Left Shoulder" and -1 or 1
+     local handPoint = box.CFrame:PointToWorldSpace(Vector3.new(side * (box.Size.X / 2 + 0.2), -0.15, 0))
+     local shoulder = j.Part0.CFrame * j.C0
+     local delta = handPoint - shoulder.Position
+     if delta.Magnitude > 0.01 then
+      local center = handPoint - delta.Unit * (j.Part1.Size.Y / 2)
+      local arm = CFrame.lookAt(center, center + delta.Unit) * CFrame.Angles(math.pi / 2, 0, 0)
+      target = shoulder:ToObjectSpace(arm * j.C1)
+     end
+    end
+    j.Transform = j.Transform:Lerp(target, state.Weight)
+   end
+  end
  end
  for model, state in pairs(active) do
   if wanted[model] == nil then
