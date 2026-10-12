@@ -192,8 +192,16 @@ function W.UpdatePlot(index, player, data)
   local roles = {"Cashier", "Receiver", "Buyer", "Manager"}
   for i, role in ipairs(roles) do
    if (data.Staff[role] or 0) > 0 then
-    local employee = W.Person(m, role, cf * CFrame.new(-14 + i * 6, 0.5, 8), C.Palette[i])
-    W.Wander(employee, {(cf * CFrame.new(-16 + i * 6, 3.5, 8)).Position, (cf * CFrame.new(-12 + i * 6, 3.5, 10)).Position}, 2.5, 4)
+    if role == "Cashier" then
+     -- Register is at local (5, 4, 1); stand behind it facing the shop entrance.
+     local employee = W.Person(m, role, cf * CFrame.new(5, 0.75, 4.5), color)
+     employee.Humanoid.WalkSpeed, employee.Humanoid.AutoRotate = 0, false
+     employee.PrimaryPart.Anchored = true
+     employee:SetAttribute("Stationary", true)
+    else
+     local employee = W.Person(m, role, cf * CFrame.new(-14 + i * 6, 0.5, 8), C.Palette[i])
+     W.Wander(employee, {(cf * CFrame.new(-16 + i * 6, 3.5, 8)).Position, (cf * CFrame.new(-12 + i * 6, 3.5, 10)).Position}, 2.5, 4)
+    end
    end
   end
  end

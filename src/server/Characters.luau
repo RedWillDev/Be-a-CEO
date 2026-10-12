@@ -91,16 +91,17 @@ function Characters.Create(parent, name, cf, color)
   model = fallback(parent, name, cf, color)
  end
  local hum = model:FindFirstChildOfClass("Humanoid")
- if name == "Touriste" then
-  model:SetAttribute("Tourist", true)
-  local head, torso = model.Head, model.Torso
-  local function clothing(n, size, limb, offset, tint)
+ local function clothing(n, size, limb, offset, tint)
    local p = Instance.new("Part")
    p.Name, p.Size, p.Color = n, size, tint
    p.CanCollide, p.CanTouch, p.CanQuery, p.Massless = false, false, false, true
    p.CFrame, p.Parent = limb.CFrame * offset, model
    local weld = Instance.new("WeldConstraint") weld.Part0, weld.Part1, weld.Parent = limb, p, p
+   return p
   end
+ if name == "Touriste" then
+  model:SetAttribute("Tourist", true)
+  local head, torso = model.Head, model.Torso
   local straw = Color3.fromRGB(234, 206, 143)
   clothing("VacationHatBrim", Vector3.new(2.5, 0.12, 1.9), head, CFrame.new(0, 0.6, 0), straw)
   clothing("VacationHatCrown", Vector3.new(1.6, 0.45, 1.3), head, CFrame.new(0, 0.85, 0), straw)
@@ -117,6 +118,23 @@ function Characters.Create(parent, name, cf, color)
    clothing("Sandal", Vector3.new(1.06, 0.16, 1.18), leg, CFrame.new(0, -0.96, -0.06), Color3.fromRGB(104, 73, 43))
   end
   clothing("VacationBackpack", Vector3.new(1.3, 1.4, 0.55), torso, CFrame.new(0, 0, 0.8), Color3.fromRGB(207, 115, 68))
+ elseif name == "Cashier" then
+  local torso = model.Torso
+  local white, navy = Color3.fromRGB(242, 239, 230), Color3.fromRGB(28, 36, 49)
+  clothing("CashierShirt", Vector3.new(2.04, 2.02, 1.04), torso, CFrame.identity, white)
+  for _, side in ipairs({"Left", "Right"}) do
+   clothing("CashierSleeve", Vector3.new(1.03, 1.35, 1.03), model[side .. " Arm"], CFrame.new(0, 0.3, 0), white)
+   clothing("CashierTrousers", Vector3.new(1.03, 2.02, 1.03), model[side .. " Leg"], CFrame.identity, navy)
+  end
+  clothing("CashierApron", Vector3.new(1.45, 1.65, 0.1), torso, CFrame.new(0, -0.15, -0.58), color)
+  for _, x in ipairs({-0.5, 0.5}) do
+   clothing("ApronStrap", Vector3.new(0.18, 0.65, 0.1), torso, CFrame.new(x, 0.7, -0.57), color)
+  end
+  local badge = clothing("CashierNameBadge", Vector3.new(0.65, 0.3, 0.08), torso, CFrame.new(0.35, 0.4, -0.68), white)
+  local gui = Instance.new("SurfaceGui") gui.Face, gui.Parent = Enum.NormalId.Front, badge
+  local label = Instance.new("TextLabel") label.Size, label.BackgroundTransparency = UDim2.fromScale(1, 1), 1
+  label.Text, label.TextScaled, label.TextColor3, label.Font = "CAISSE", true, navy, Enum.Font.GothamBold
+  label.Parent = gui
  end
  hum.DisplayDistanceType, hum.BreakJointsOnDeath = Enum.HumanoidDisplayDistanceType.None, false
  hum.WalkSpeed, hum.AutoRotate = 7, true
