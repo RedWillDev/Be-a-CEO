@@ -16,6 +16,45 @@ function L.Start(sessions, W, E, P, send, valid, otherCarry)
   self.Carries[player] = nil
  end
  function self:Busy(player) return self.Carries[player] ~= nil end
+ function self:CancelReceiver(entry)
+  local job = entry.ReceiverJob
+  if not job then return end
+  entry.ReceiverJob = nil
+  if job.Handle then job.Handle:Detach() end
+  if job.Employee.Parent then W.StopRoute(job.Employee) job.Employee:SetAttribute("ReceiverStatus", "Disponible") end
+  if entry.Model.Parent and not entry.Carrier then entry.Model:PivotTo(entry.Home) entry.Prompt.Enabled = true end
+  entry.RetryAt = os.clock() + 3
+ end
+ function self:DispatchReceiver(owner, s, entry, rank)
+  local plot = W.Plots[s.Plot]
+  local employee = plot.Model and plot.Model:FindFirstChild("Receiver")
+  if not employee or not employee.PrimaryPart or employee.Humanoid.Health <= 0 then return end
+  local job = {Employee = employee, Phase = "Approach", Started = os.clock()}
+  entry.ReceiverJob = job
+  local cf, speed = plot.CF, 6 + rank * 2
+  local function current()
+   return entry.ReceiverJob == job and self.Parcels[owner] == entry and valid(owner) and s.Data.Parcel and not entry.Carrier and employee.Parent and employee.Humanoid.Health > 0 and entry.Model.Parent
+  end
+  employee:SetAttribute("ReceiverStatus", "Va chercher le colis")
+  W.Route(employee, {(cf * CFrame.new(13, 3.5, -15)).Position, (cf * CFrame.new(9, 3.5, -19)).Position}, function(reached)
+   if entry.ReceiverJob ~= job then return end
+   if not reached or not current() or (employee.PrimaryPart.Position - entry.Model.PrimaryPart.Position).Magnitude > 6 then self:CancelReceiver(entry) return end
+   -- Claim atomically before attaching: a player can win the pickup until this point.
+   entry.Prompt.Enabled = false job.Phase = "Return"
+   job.Handle = Carry.new(employee, entry.Model, "Parcel"):Attach()
+   employee:SetAttribute("ReceiverStatus", "Ramène le colis")
+   W.Route(employee, {(cf * CFrame.new(13, 3.5, -15)).Position, (cf * CFrame.new(13, 3.5, -7)).Position}, function(returned)
+    if entry.ReceiverJob ~= job then return end
+    local destination = (cf * CFrame.new(13, 3.5, -7)).Position
+    if not returned or not current() or (employee.PrimaryPart.Position - destination).Magnitude > 3 then self:CancelReceiver(entry) return end
+    job.Handle:Detach() job.Handle = nil
+    entry.ReceiverJob = nil employee:SetAttribute("ReceiverStatus", "Disponible")
+    if not self:Receive(owner, owner) then
+     entry.Model:PivotTo(entry.Home) entry.Prompt.Enabled = true entry.RetryAt = os.clock() + 3
+    end
+   end, speed)
+  end, speed)
+ end
  function self:Drop(player)
   local carry = self.Carries[player]
   if not carry then return end
@@ -33,6 +72,7 @@ function L.Start(sessions, W, E, P, send, valid, otherCarry)
   self:Drop(player)
   local parcel = self.Parcels[player]
   if parcel then
+   self:CancelReceiver(parcel)
    if parcel.Carrier then self:Drop(parcel.Carrier) end
    parcel.Model:Destroy() self.Parcels[player] = nil
   end
@@ -53,6 +93,7 @@ function L.Start(sessions, W, E, P, send, valid, otherCarry)
   end
   local visual = self.Parcels[owner]
   if visual then
+   self:CancelReceiver(visual)
    if visual.Carrier then reset(visual.Carrier) end
    visual.Model:Destroy() self.Parcels[owner] = nil
   end
@@ -78,6 +119,8 @@ function L.Start(sessions, W, E, P, send, valid, otherCarry)
     if not Studio or not d.Rivalry or not s.Data.Rivalry or d.Level < 2 or s.Data.Level < 2 or os.clock() - entry.Created < 20 then send(player, "Colis protégé. Vol : test Studio, entreprises volontaires niveau 2+, après 20 s.") return end
    end
    if d.Product ~= s.Data.Parcel.Product then send(player, "Ce colis ne correspond pas au produit de ta boutique.") return end
+   if entry.ReceiverJob and entry.ReceiverJob.Phase == "Return" then return end
+   self:CancelReceiver(entry)
    entry.Handle = Carry.new(player.Character, m, "Parcel"):Attach()
    entry.Carrier = player entry.LastPosition = r.Position self.Carries[player] = entry prompt.Enabled = false
    send(player, "Entre dans ta boutique avec le colis : il sera immédiatement rangé en stock.")
@@ -108,11 +151,17 @@ function L.Start(sessions, W, E, P, send, valid, otherCarry)
     if not self.Parcels[owner] then self:Spawn(owner, s) end
     local entry = self.Parcels[owner]
     local rank = s.Data.Staff and s.Data.Staff.Receiver or 0
-    if rank > 0 and not entry.Carrier and os.clock() - entry.Created >= 16 - rank * 4 then self:Receive(owner, owner) end
+    if rank > 0 and not entry.Carrier and not entry.ReceiverJob and os.clock() >= (entry.RetryAt or 0) and os.clock() - entry.Created >= 4 - rank then
+     self:DispatchReceiver(owner, s, entry, rank)
+    end
    end
   end
  end
  function self:UpdateCarries()
+  for owner, entry in pairs(self.Parcels) do
+   local job = entry.ReceiverJob
+   if job and (not valid(owner) or not job.Employee.Parent or job.Employee.Humanoid.Health <= 0 or not entry.Model.Parent or os.clock() - job.Started > 45) then self:CancelReceiver(entry) end
+  end
   for player, carry in pairs(self.Carries) do
    local r = root(player) local s = sessions[player]
    if not r or not valid(player) or not carry.Model.Parent or (carry.Owner and not valid(carry.Owner)) or (carry.Started and os.clock() - carry.Started > 90) or (r and carry.LastPosition and (r.Position - carry.LastPosition).Magnitude > 40) then self:Drop(player)

@@ -45,9 +45,14 @@ function W.TouristWalk(model)
  local z = model.PrimaryPart.Position.Z < 0 and -31 or 31
  W.Wander(model, {Vector3.new(-155, 23.7, z), Vector3.new(155, 23.7, z)}, 6.5, 1.5)
 end
-function W.Route(model, points, done)
- W.Wander(model, points, 8, 0)
+function W.Route(model, points, done, speed)
+ W.Wander(model, points, speed or 8, 0)
  walkers[model].Done = done
+end
+function W.StopRoute(model)
+ walkers[model] = nil
+ local hum = model:FindFirstChildOfClass("Humanoid")
+ if hum then hum:Move(Vector3.zero) hum:MoveTo(model.PrimaryPart.Position) end
 end
 function W.ReleaseCustomer(model, index)
  if not model or not model.Parent then return end
@@ -206,6 +211,15 @@ function W.UpdatePlot(index, player, data)
      employee.Humanoid.WalkSpeed, employee.Humanoid.AutoRotate = 0, false
      employee.PrimaryPart.Anchored = true
      employee:SetAttribute("Stationary", true)
+    elseif role == "Receiver" then
+     local employee = W.Person(m, role, cf * CFrame.new(13, 0.75, -7), C.Palette[i])
+     employee:SetAttribute("ReceiverStatus", "Disponible")
+     local badge = Instance.new("BillboardGui") badge.Name = "ReceiverTask"
+     badge.Size, badge.StudsOffset, badge.AlwaysOnTop, badge.Parent = UDim2.fromOffset(190, 42), Vector3.new(0, 3.5, 0), true, employee.PrimaryPart
+     local label = Instance.new("TextLabel") label.Size, label.BackgroundTransparency = UDim2.fromScale(1, 1), 1
+     label.TextSize, label.TextColor3, label.Parent = 14, Color3.fromRGB(255, 218, 149), badge
+     local function status() label.Text = "RÉCEPTION\n" .. (employee:GetAttribute("ReceiverStatus") or "Disponible") end
+     employee:GetAttributeChangedSignal("ReceiverStatus"):Connect(status) status()
     else
      local employee = W.Person(m, role, cf * CFrame.new(-14 + i * 6, 0.5, 8), C.Palette[i])
      W.Wander(employee, {(cf * CFrame.new(-16 + i * 6, 3.5, 8)).Position, (cf * CFrame.new(-12 + i * 6, 3.5, 10)).Position}, 2.5, 4)

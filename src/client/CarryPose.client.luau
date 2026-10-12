@@ -34,6 +34,7 @@ RunService.PreSimulation:Connect(function(dt)
  end
  for _, m in ipairs(CollectionService:GetTagged("CEONPC")) do
   if m:GetAttribute("Carried") then wanted[m] = true end
+  if m:GetAttribute("CarryKind") and m:FindFirstChild("Torso") then wanted[m] = false end
  end
  for model, passenger in pairs(wanted) do
   if not active[model] then active[model] = {Joints = pose(model, passenger), Weight = 0} end

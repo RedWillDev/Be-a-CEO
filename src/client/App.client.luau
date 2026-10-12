@@ -101,7 +101,7 @@ local function render()
   textRow("Équipe • recrutement et formations payés une fois, sans salaire récurrent pour cette version. Trois niveaux par poste.", 70)
   for i, role in ipairs(latest.StaffRoles or {}) do
    local rank = d.Staff and d.Staff[role.Key] or 0
-   local effects = {"Encaisse les clients locaux ; accélère aux niveaux 2 et 3.", "Range les colis après 12 / 8 / 4 secondes.", "Commande quand le stock descend à 3 / 4 / 5 produits.", "Recrute et forme les 3 autres postes jusqu'à son propre niveau."}
+   local effects = {"Encaisse les clients locaux ; accélère aux niveaux 2 et 3.", "Va chercher et porte les colis. Départ après 3 / 2 / 1 secondes ; marche plus vite à chaque niveau. Stock crédité au retour.", "Commande quand le stock descend à 3 / 4 / 5 produits.", "Recrute et forme les 3 autres postes jusqu'à son propre niveau."}
    card(role.Name .. " • niveau " .. rank .. "/3", "Entreprise " .. role.Level .. " • " .. effects[i], rank == 3 and "Niveau maximum" or ((rank == 0 and "Recruter : " or "Former : ") .. role.Cost * (rank + 1) .. " $"), function() fire("Hire", i) end, rank > 0)
   end
   card("Réapprovisionnement automatique", "Responsable commandes requis. Dépense la caisse au prix normal du lot tant que cette option reste active.", d.AutoOrder and "Désactiver" or "Activer", function() fire("AutoOrder") end, d.AutoOrder)

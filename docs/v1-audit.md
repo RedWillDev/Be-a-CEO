@@ -4,6 +4,12 @@ Cet audit distingue présence du code et validation réelle. La V1 n'est pas enc
 
 ## Correction clients et caisse — 12 octobre 2026
 
+### Réceptionnaire actif — essais joueur à venir
+
+Le rangement temporisé 12/8/4 secondes est remplacé par un trajet réel. Le réceptionnaire attend à droite de l'entrée, part après 3/2/1 secondes selon son rang, atteint le colis, le prend avec `Carry`, puis revient au point de rangement intérieur. Sa vitesse est de 8/10/12 studs par seconde. Le stock n'est crédité qu'après arrivée vérifiée, via la fonction unique `Receive`. L'interface décrit désormais ce comportement et un indicateur affiche sa tâche.
+
+Un joueur peut prendre le colis tant que l'employé ne l'a pas saisi ; cela annule le trajet. Pendant le retour de l'employé, le prompt est désactivé et les interactions sont refusées côté serveur. Trajet échoué, profil indisponible, employé détruit/remplacé ou délai de 45 secondes : annulation, détachement et remise du colis au point de livraison, sans crédit de stock. Les tâches ne sont pas persistées ; le colis en attente reste enregistré comme auparavant. Le caissier reste fixe à son poste. Construction locale seulement, aucun essai en jeu effectué par l'assistant.
+
 ### File d'attente — implémentée, essais joueur à venir
 
 `Customers.luau` remplace la place unique par trois places FIFO devant la caisse. Les clients sont toujours des passants existants ; leurs places sont réservées pendant l'approche pour éviter la surcapacité. Seul le premier client arrivé à son emplacement peut être encaissé, manuellement ou par le caissier. Chaque suivant marche jusqu'à sa nouvelle place avant d'être servi ; son délai de service commence à son arrivée. Aucun prélèvement de stock ni paiement n'a lieu à l'entrée dans la file. Le nombre de réservations ne dépasse pas le stock au moment de l'admission.
