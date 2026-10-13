@@ -2,13 +2,15 @@
 
 > Du garage à ta propre tour : crée ta marque et conquiers la ville.
 
-Version consolidée du 11 octobre 2026. Intègre les propositions validées dans la conversation. Les durées, capacités et valeurs d'équilibrage sont des hypothèses à tester, pas des garanties de performance.
+Version consolidée du 13 octobre 2026. Overhaul validé : première réussite guidée, transformations architecturales, vacanciers, collections et événements. Cette roadmap remplace les anciennes priorités. Les fonctionnalités prévues ne sont pas présentées comme déjà réalisées ; durées et valeurs restent à tester.
+
+Cible de travail : jeunes adolescents, environ 10–14 ans (fourchette proposée, pas encore confirmée précisément). Promesse : « Je commence dans un garage, je monte mon équipe, puis je deviens le patron le plus stylé du quartier. »
 
 ## 1. Vision et principes
 
 Le joueur démarre dans un garage, choisit des produits, trouve des fournisseurs sur une plateforme fictive, négocie, produit et vend. Il fait grandir son entreprise dans une ville partagée où chacun voit les bâtiments et boutiques des autres.
 
-Deux plaisirs structurent le jeu : prendre de bonnes décisions commerciales et vivre des situations amusantes avec les autres joueurs. La réussite est visible : enseigne, file de clients, livraisons et nouveaux étages.
+Deux plaisirs structurent le jeu : prendre de bonnes décisions commerciales et vivre des situations amusantes avec les autres joueurs. La réussite est visible : enseigne, file de clients, livraisons et changements complets d'architecture, jusqu'au gratte-ciel new-yorkais. Il ne s'agit pas seulement d'empiler des étages identiques.
 
 - Le progrès durable reste acquis : marque, bâtiments et déblocages.
 - Le joueur trouve toujours une action intéressante ; les longues attentes ne bloquent pas le jeu.
@@ -20,26 +22,27 @@ Deux plaisirs structurent le jeu : prendre de bonnes décisions commerciales et 
 
 ## 2. Boucle principale
 
-1. Repérer une tendance ou une demande de clients.
-2. Comparer les fournisseurs sur trois critères de départ : prix, qualité et délai.
-3. Négocier avec quelques choix de dialogue et une jauge de confiance.
-4. Commander, recevoir et mettre les produits en vente.
-5. Observer les clients et comprendre le résultat.
-6. Réinvestir dans la boutique, la marque et les prochains produits.
+1. Choisir une famille de produits parmi trois cartes illustrées.
+2. Commander, porter le colis et remplir les rayons.
+3. Voir un client choisir son produit, rejoindre la caisse et l'encaisser.
+4. Réinvestir dans les employés, les collections et le bâtiment.
+5. Participer aux événements et accueillir les vacanciers.
 
-Les premières commandes prennent quelques secondes. Les commandes longues apparaissent ensuite en parallèle des ventes, de la personnalisation et des événements. Le moteur du retour est le prochain objectif, pas une attente imposée.
+Fournisseurs, remises et prix restent dans les réglages avancés, sans être obligatoires pour la première vente. Les employés travaillent dès leur recrutement ; responsable commandes et gérant peuvent être mis en pause. Les réserves d'argent pour les prochains produits restent protégées.
 
-### Premières dix minutes : scénario cible à tester
+### Premières dix minutes : cible à tester
 
 | Moment | Expérience |
 |---|---|
-| 0–30 secondes | Découvrir son garage et choisir entre trois produits |
-| 30–90 secondes | Négocier simplement, recevoir le premier lot et réaliser une vente |
-| 2–3 minutes | Acheter une amélioration visible |
-| 3–5 minutes | Rencontrer un concurrent ou participer à un petit événement |
-| 5–10 minutes | Personnaliser sa marque et choisir le prochain objectif |
+| 0–30 secondes | Découvrir le garage et choisir parmi trois cartes produits |
+| Environ 2 minutes au plus | Premier lot offert, carton à porter, rayons remplis puis premier encaissement |
+| 2–3 minutes | Première amélioration visible |
+| 3–5 minutes | Découvrir un vacancier ou un événement |
+| 5–10 minutes | Recruter, personnaliser et voir le prochain objectif architectural |
 
-Le tutoriel se fait par actions courtes. Le premier fournisseur est sûr ; aucun achat en Robux n'est nécessaire pour terminer cette séquence.
+Une indication à la fois sur l'objet concerné. Animation, son et retour visuel courts célèbrent la vente. Pas de négociation obligatoire ni de demande d'achat en Robux pendant l'introduction.
+
+Le premier lot offert et le guidage dans le monde sont **à implémenter**. Les trois produits et le guide textuel contextuel existent. Sauvegarder l'attribution unique du lot offert pour éviter de le récupérer à chaque connexion. Deux minutes est une cible de conception, pas un résultat mesuré.
 
 ## 3. Fournisseurs, produits et risque stratégique
 
@@ -49,6 +52,8 @@ Aléas possibles : retard de livraison, lot défectueux, demande qui diminue ou 
 
 Un flop fournit une explication courte et une solution active : liquidation du stock, recyclage ou modification du produit. Il ne détruit pas le bâtiment ou les acquis du joueur.
 
+Les risques et systèmes commerciaux avancés ci-dessus restent secondaires : ne pas les ajouter au démarrage de cet overhaul.
+
 ### Produits et marque
 
 - Personnaliser les couleurs, les emballages et le nom d'une gamme.
@@ -56,13 +61,34 @@ Un flop fournit une explication courte et une solution active : liquidation du s
 - Montrer les produits en vitrine et dans les mains des clients.
 - Mettre en scène les lancements : camion, cartons et arrivée de clients.
 
+### Collections validées pour l'overhaul
+
+Les trois produits deviennent des familles : sneakers (classiques, sport, lumineuses), audio (casques, enceintes, installation DJ), jouets (robots, figurines, voitures miniatures). Ces variantes sont des exemples à produire.
+
+Déblocages par objectifs annoncés, par exemple « Vends 20 sneakers pour obtenir ce modèle », sans tirage payant. Un exemplaire peut être exposé en vitrine de collection ; distinguer déblocages, exposition et stock vendable pour éviter toute duplication. Les collections et cette vitrine sont **à développer** ; seuls les trois produits de base existent actuellement.
+
 ## 4. Ville partagée et bâtiments visibles
 
 ### Première ville
 
 Prototype avec 8 parcelles autour d'une place centrale, à ajuster après tests de performance et de lisibilité. Chaque joueur reçoit une parcelle disponible. La ville reste compacte, avec des trajets courts et des boutiques visitables.
 
-Le bâtiment évolue sur place : garage → boutique → immeuble → tour. Le campus et l'hélipad constituent des extensions futures, conditionnées à l'espace disponible.
+### Transformations architecturales — direction validée
+
+Le bâtiment change réellement de modèle, de façade et de silhouette sur la parcelle : garage → boutique → immeuble → siège → tour. Les styles intermédiaires restent à définir. La cible finale demandée est un **gratte-ciel d'inspiration new-yorkaise**, avec :
+
+- une silhouette verticale distinctive et des façades travaillées ;
+- un véritable hall d'accueil visitable ;
+- des arbres et un aménagement paysager autour ;
+- des dragons au sommet comme signature visuelle.
+
+Les dragons sont inscrits comme ornements architecturaux ; leur donner vie ou créer du combat n'est pas validé. Tous les étages n'ont pas besoin d'être visitables : privilégier un accueil utile, les postes d'employés et les espaces pertinents.
+
+**Meshy est prévu pour les assets 3D adaptés**, notamment dragons, ornements et éléments architecturaux personnalisés. Valider un premier bâtiment ou ensemble modulaire avant une production complète. La génération ne dispense pas du travail d'échelle, de collisions et d'optimisation mobile. Aucune génération Meshy n'est lancée par cette mise à jour documentaire.
+
+Séparer l'apparence des points de gameplay : entrée, caisse, rayons, réception, bureaux, cheminements et véhicule. Une transformation doit préserver stock, employés, file, livraisons et sauvegarde. Contrôler l'emprise des huit parcelles, les accès voisins et la caméra au pied des tours.
+
+Prévoir des collisions simples, une enveloppe extérieure optimisée et des textures partagées lorsque possible. Arbres et dragons doivent rester lisibles sans surcharger les appareils modestes. Campus et hélipad restent hors de cet overhaul.
 
 Les niveaux peuvent être mélangés pour montrer les objectifs de progression. La compétition directe reste encadrée selon la progression des participants.
 
@@ -106,20 +132,24 @@ Adapter les prix, changer la vitrine, améliorer la qualité, lancer une publici
 
 ## 6. Portage de clients et sécurité
 
-### Prototype : clients indécis sur la place
+### Vacanciers — mécanique signature validée
 
-1. Un client spécial apparaît dans la zone de concurrence.
-2. Les joueurs peuvent tenter de le recruter ou de le porter.
-3. Le porteur est ralenti et ne transporte qu'un client à la fois.
-4. Arriver à sa boutique accorde une vente bonus, une seule fois.
+1. Le bus dépose des vacanciers qui se promènent dans la ville.
+2. Une bulle illustrée montre le produit recherché.
+3. Le joueur peut les accompagner ou les porter avec une animation amusante.
+4. Plusieurs boutiques peuvent intéresser un vacancier encore libre.
+5. Une fois accueilli dans une boutique, il est protégé contre une reprise par un rival.
+6. Il choisit un produit, rejoint la file et rapporte son bonus **au paiement**, pas en franchissant la porte.
 
-Tester si cette mécanique est amusante avant de la généraliser. Un départ, un abandon ou une interruption libère proprement le client. Les réservations, distances et récompenses sont validées côté serveur.
+Personnalités proposées : touriste chargé de sacs, collectionneur de sneakers, célébrité incognito. Bulles et personnalités sont à créer ; marche, portage et parcours rayon → caisse existent déjà.
 
-### Extension : rivalité entre boutiques
+Un seul objet ou client porté à la fois, déplacement ralenti. Le serveur valide réservations, distances, interruptions et paiements. Départ, mort et abandon doivent nettoyer le portage correctement.
 
-Le portage devant une boutique est réservé à des événements acceptés par les participants, entre niveaux compatibles. La fidélité peut ralentir ou empêcher le portage.
+### Rivalité de colis
 
-Agents possibles : stagiaire, agent confirmé, équipe de sécurité et alarme. Ils peuvent détecter un porteur et lui faire lâcher le client. Les salaires utilisent la monnaie du jeu et sont intégrés à une estimation de marge visible. Distractions et repérage sont des extensions ultérieures.
+Commencer par des **colis bonus disputés**, clairement distincts des commandes payées. Le vol expérimental des commandes ordinaires reste désactivé en serveur publié ; l'ouvrir n'est pas un objectif de l'overhaul.
+
+Les anciennes propositions de reprise de clients devant une boutique, d'agents d'attaque et de salaires de sécurité ne font pas partie de la direction retenue. Aucun salaire récurrent ajouté.
 
 ### Garde-fous
 
@@ -133,13 +163,15 @@ Agents possibles : stagiaire, agent confirmé, équipe de sécurité et alarme. 
 
 ## 7. Événements et classements
 
-### Trois événements prioritaires
+### Trois événements prioritaires — nouvel ordre validé
 
-- **Bus de touristes** : demande annoncée pour une catégorie, courte préparation puis arrivée des clients.
-- **Commande collective** : plusieurs joueurs contribuent à une livraison et reçoivent une récompense selon leur participation.
-- **Tendance surprise** : une catégorie prend temporairement de la valeur, sans rendre les autres stocks inutiles.
+- **Bus de vacanciers** : arrivée visible, demandes illustrées, accueil et portage.
+- **Fête du quartier** : plusieurs boutiques contribuent ; faire évoluer la commande collective existante en événement visible et coopératif.
+- **Livraison express** : transporter une commande sur un petit parcours lisible, réalisable seul.
 
-Exemple : « Un bus de touristes arrive : forte demande de jouets ! » Les joueurs peuvent modifier leur vitrine, ajuster leur prix, chercher des clients ou coopérer pour fournir le stock.
+Événements courts, facultatifs et expliqués visuellement ; durées et récompenses à équilibrer. Ils reviennent régulièrement, sans perte d'acquis si le joueur les manque. Les colis bonus disputés sont une variante à prototyper ensuite.
+
+La tendance surprise déjà présente reste une variété secondaire, pas une priorité de production. La livraison express peut utiliser les véhicules nécessaires à son parcours ; elle ne valide pas une refonte générale des voitures.
 
 ### Distinctions
 
@@ -261,50 +293,84 @@ Répartition prévue : logique serveur (économie, clients, parcelles, commandes
 
 Deux voies complémentaires : accès autorisé au dépôt GitHub pour modifier les sources ; client IA local compatible avec le serveur MCP de Roblox Studio pour agir dans une session Studio ouverte et tester. Une connexion GitHub seule ne donne pas le contrôle de Studio.
 
-Aucune connexion au dépôt ni à Studio n'est encore réalisée à la date de cette version. La disponibilité des outils, les permissions et les tests doivent être vérifiés dans l'environnement réellement utilisé. Les clés et mots de passe ne doivent pas être placés dans le document ou le dépôt.
+Le dépôt Be-a-CEO et le workflow local Rojo existent désormais. Vérifier l'état actif des connexions lors des interventions. Les essais en jeu sont effectués par le joueur : l'assistant ne lance pas de session Play. Les clés et mots de passe ne doivent pas être placés dans le document ou le dépôt.
 
-## 13. Feuille de route
+## 13. Feuille de route — overhaul validé le 13 octobre 2026
 
-### V1 — Prototype jouable
+Remplace l'ancien découpage V1/V2/V3. **Implémenté** signifie présent dans le code, pas validé pour publication. Les propositions 1, 2 (avec correction architecturale), 4, 5 et 7 sont retenues. Les refontes générales des activités après automatisation (3) et des véhicules (6) ne sont pas validées comme chantiers distincts ; les fonctionnalités existantes sont conservées.
 
-- Petite ville et 8 parcelles ; garages visibles et visitables.
-- Attribution/libération des parcelles et sauvegarde fiable.
-- Trois fournisseurs et quelques produits, avec trois choix au démarrage.
-- Négociation simple, commandes rapides, ventes et clients visibles.
-- Garage évoluant en boutique et personnalisation élémentaire.
-- Clients locaux et premiers clients disputés.
-- Un événement et prototype de portage sur la place.
-- Interface mobile et suivi des étapes du tutoriel.
+### Socle existant — conserver et stabiliser
 
-Validation : première vente compréhensible, amélioration gratifiante, concurrence amusante, aucune perte de données ni duplication dans les scénarios testés. Mesurer les retours avant d'étendre la portée.
+- [x] Ville de huit parcelles, clients marchant depuis la ville.
+- [x] Livraisons physiques, portage, caisse manuelle et employés automatiques.
+- [x] Stock visible en rayon, capacité par niveau et bureaux dédiés.
+- [x] Vacanciers portables, parcours d'achat et événements de base.
+- [x] HUD simplifié, réglages avancés et guide contextuel.
+- [x] GitHub et workflow Rojo configurés.
+- [ ] Validation multijoueur, mobile, sauvegarde réelle et reconnexions.
 
-### V2 — Ville approfondie
+### O1 — Première réussite guidée
 
-- Immeubles et tours, vitrines et livraisons enrichies.
-- Bus, commande collective et tendance surprise.
-- Préférences clients, distinctions et parts de marché lisibles.
-- Gains hors ligne, progression fournisseur et objectifs quotidiens.
-- Coopération entre amis.
-- Rivalités consenties et sécurité si le portage est validé.
-- Premières offres de personnalisation et confort après validation de la boucle gratuite.
+- [ ] Trois cartes illustrées et premier lot offert une seule fois.
+- [ ] Guidage visuel carton → rayons → client → caisse.
+- [ ] Célébration courte de première vente et prochaine amélioration visible.
+- [ ] Tester la cible d'environ deux minutes jusqu'à la première vente.
 
-### V3 — Profondeur à long terme
+Validation joueur : progression compréhensible sans aide, aucune double attribution à la reconnexion, interface utilisable sur téléphone.
 
-- Espionnage, contre-espionnage et spécialisations.
-- Alliances et marché entre joueurs après sécurisation des échanges.
-- Saisons, pass et prestige.
-- Quartiers supplémentaires ou capacités serveur accrues selon les performances.
+### O2 — Garage → gratte-ciel new-yorkais
 
-## 14. Prochaines étapes
+- [ ] Définir les silhouettes des cinq niveaux et l'échelle sur les huit parcelles.
+- [ ] Séparer apparence et points de gameplay.
+- [ ] Prototyper une transformation complète, pas des étages identiques ajoutés.
+- [ ] Produire un premier essai d'assets Meshy, intégrer et optimiser.
+- [ ] Ajouter hall d'accueil, arbres et aménagement extérieur.
+- [ ] Créer et placer les dragons ornementaux au sommet.
+- [ ] Décliner les modèles intermédiaires et mettre en scène les transformations.
 
-- [ ] Choisir le nom du jeu et celui de la plateforme fictive.
-- [ ] Étudier quelques jeux concurrents sans supposer l'absence d'équivalent.
-- [ ] Créer ou sélectionner le dépôt GitHub et autoriser son accès.
-- [ ] Installer/configurer Roblox Studio et le flux Rojo ; connexion MCP locale facultative.
-- [ ] Construire le prototype de ville et la première vente.
-- [ ] Tester à plusieurs joueurs, sur mobile et après reconnexion.
-- [ ] Ajuster les décisions clients et le portage à partir de tests.
-- [ ] Valider la rétention avant d'élargir le contenu et les dépenses d'acquisition.
+Validation joueur : différences architecturales nettes, accueil accessible, PNJ et livraisons non bloqués, stock et employés conservés, caméra et performances acceptables avec huit tours.
+
+### O3 — Vacanciers reconnaissables
+
+- [ ] Bulles de demande illustrées et personnalités distinctes.
+- [ ] Animation de portage améliorée.
+- [ ] Concurrence limitée aux vacanciers encore libres dans la ville.
+- [ ] Protection après accueil, bonus au paiement et interruptions propres.
+
+Validation joueur : bonus compréhensible, aucune reprise en boutique, double réservation ou duplication de paiement.
+
+### O4 — Collections de produits
+
+- [ ] Premières variantes des trois familles.
+- [ ] Objectifs et déblocages garantis affichés.
+- [ ] Vitrine de collection séparée du stock vendable.
+- [ ] Sauvegarde des déblocages compatible avec les profils existants.
+
+Validation joueur : comprendre quoi obtenir et comment ; retrouver sa collection après reconnexion.
+
+### O5 — Événements du quartier
+
+- [ ] Enrichir le bus avec les nouveaux vacanciers.
+- [ ] Faire de la commande collective une fête visible et coopérative.
+- [ ] Ajouter un parcours de livraison express.
+- [ ] Prototyper les colis bonus disputés sans risque pour les commandes ordinaires.
+
+Validation joueur : événements compréhensibles et jouables seul ou à plusieurs, récompenses uniques, débutants protégés.
+
+### O6 — Validation avant élargissement
+
+- [ ] Observer de nouveaux joueurs pendant les premières minutes.
+- [ ] Mesurer livraison → première vente → premier recrutement.
+- [ ] Tester mobile, huit joueurs, bâtiments/dragons et persistance.
+- [ ] Ajuster rythme, prix et récompenses avant publication.
+
+Alliances, espionnage, saisons, prestige et offres commerciales restent des pistes ultérieures, sans engagement de production dans cet overhaul. Aucune remise à zéro obligatoire de l'entreprise.
+
+## 14. Prochaine étape de production
+
+Commencer par O1 et le cadrage artistique d'O2 : parcours de première vente, silhouettes des bâtiments et référence de tour. Ne pas produire toute la bibliothèque Meshy avant validation de l'échelle et de l'intégration d'un premier essai.
+
+Les façades intermédiaires, l'apparence précise des dragons et les espaces visitables restent à préciser avant production définitive des assets. Cela ne bloque pas la préparation du guidage.
 
 ## 15. Références techniques et produit
 

@@ -14,6 +14,8 @@ La gestion comprend désormais la réception physique des colis, la caisse manue
 
 Lire [le document de conception complet](docs/roblox-tycoon-entrepreneur.md) pour les décisions de gameplay, la ville, la concurrence, la progression, la monétisation et la feuille de route.
 
+Direction d'overhaul validée le 13 octobre 2026 : première vente guidée, changements complets de bâtiments jusqu'au gratte-ciel new-yorkais (hall d'accueil, arbres, dragons au sommet), vacanciers reconnaissables, collections de produits et événements de quartier. Meshy est prévu pour les assets 3D adaptés ; leur production n'est pas encore réalisée. Voir la [roadmap mise à jour](docs/roblox-tycoon-entrepreneur.md#13-feuille-de-route--overhaul-validé-le-13-octobre-2026).
+
 ## Premier prototype
 
 - Ville compacte avec 8 parcelles et bâtiments visibles.
@@ -54,10 +56,14 @@ La configuration conserve les instances inconnues : la baseplate, le point d'app
 
 ## Prochaines étapes
 
-1. Tester la concurrence et les huit parcelles avec plusieurs joueurs dans Studio.
-2. Vérifier les sauvegardes et les reconnexions sur un serveur de test publié.
-3. Tester l'interface et la conduite sur mobile.
-4. Affiner l'équilibrage et les graphismes avant d'ajouter les systèmes avancés.
+1. Première réussite guidée : lot initial offert une seule fois, indications visuelles et premier encaissement.
+2. Cadrage artistique puis transformations garage → gratte-ciel : modèles distincts, accueil, arbres et dragons ; premier essai Meshy avant production complète.
+3. Vacanciers : demandes illustrées, personnalités et protection après accueil.
+4. Collections : variantes déblocables par objectifs et vitrine dédiée.
+5. Événements : bus enrichi, fête du quartier, livraison express et prototype de colis bonus disputés.
+6. Validation avant publication : huit joueurs, téléphone, performances des tours et sauvegardes réelles/reconnexions.
+
+Les essais en jeu sont effectués par le joueur. Une génération Rojo réussie ne remplace pas ces validations. Aucun changement de gameplay ni asset Meshy n'a été produit lors de cette mise à jour documentaire.
 
 ## Références
 
