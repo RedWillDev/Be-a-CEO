@@ -13,7 +13,10 @@ check(not S.Hire(a, 1, 180) and a.Cash == 380, "training protects reserve")
 check(not S.Hire(a, 99, 180), "invalid role")
 a.Level, a.Cash = 4, 10000
 check(S.Hire(a, 4, 180), "manager unlock")
-check(not S.Manage(a, 180), "manager opt in")
+check(a.ManagerEnabled == true, "manager works immediately after hiring")
+a.ManagerEnabled = false
+S.Init(a)
+check(not S.Manage(a, 180), "manager pause survives initialization")
 a.ManagerEnabled = true
 check(S.Manage(a, 180) and a.Staff.Receiver == 1, "manager hires next role")
 check(S.Manage(a, 180) and a.Staff.Buyer == 1, "manager hires buyer")
@@ -33,4 +36,20 @@ check(not logistics:Receive("A", "B"), "cannot convert stolen merchandise")
 b.Product = 1 local before = a.Cash
 check(logistics:Receive("A", "B") and b.Stock == 10 and a.Cash == before + 90 and not a.Parcel, "opt in Studio theft and insurance")
 check(not logistics:Receive("A", "B") and b.Stock == 10, "theft cannot repeat")
+local buyer = E.New()
+buyer.Level, buyer.Cash = 2, 10000
+check(S.Hire(buyer, 3, 180) and buyer.AutoOrder == true, "buyer works immediately after hiring")
+buyer.AutoOrder = false
+S.Init(buyer)
+check(buyer.AutoOrder == false, "buyer pause survives initialization")
+check(S.Hire(buyer, 3, 180) and buyer.AutoOrder == false, "training does not undo pause")
+local oldProfile = E.New()
+oldProfile.Staff = {Buyer = 1, Manager = 1}
+oldProfile.AutoOrder, oldProfile.ManagerEnabled = false, false
+S.Init(oldProfile)
+check(oldProfile.AutoOrder and oldProfile.ManagerEnabled, "existing employees migrate once")
+oldProfile.AutoOrder, oldProfile.ManagerEnabled = false, false
+S.Init(oldProfile)
+check(not oldProfile.AutoOrder and not oldProfile.ManagerEnabled, "migration does not repeat")
+check(a.AutoOrder == true, "manager hiring buyer enables automatic orders")
 print("[Operations checks] PASS: " .. count .. " assertions; staff, parcels, protection and Studio transfers.")

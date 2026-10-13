@@ -76,7 +76,7 @@ function P.Action(d, action, value, now, orderCost)
  elseif action == "AutoOrder" then
   if d.Level < 2 then return false, "Le réapprovisionnement automatique se débloque à la boutique." end
   d.AutoOrder = not d.AutoOrder
-  return true, d.AutoOrder and "Réapprovisionnement activé : un lot normal dès que le stock descend à 3." or "Réapprovisionnement désactivé."
+  return true, d.AutoOrder and ("Commandes automatiques reprises : un lot quand il reste " .. (2 + (d.Staff and d.Staff.Buyer or 1)) .. " produits ou moins.") or "Commandes automatiques en pause. Tu peux toujours commander toi-même."
  elseif action == "Liquidate" then
   if d.Stock < 1 then return false, "Aucun stock à liquider." end
   local amount = math.floor(d.Stock * C.Products[d.Product].Cost * 0.5)
