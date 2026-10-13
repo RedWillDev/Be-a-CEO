@@ -3,6 +3,8 @@ local RunService = game:GetService("RunService")
 local DataStoreService = game:GetService("DataStoreService")
 local shared = game.ReplicatedStorage.BeACEO
 local C = require(shared.Config)
+local EventInfo = require(shared.EventInfo)
+local Movement = require(script.Parent.Movement)
 local E = require(script.Parent.Economy)
 local P = require(script.Parent.Progression)
 local Staff = require(script.Parent.Staff)
@@ -35,7 +37,7 @@ local function send(player, message)
   end
  end
  table.sort(board, function(a, b) if a.Wins == b.Wins then return a.Name < b.Name end return a.Wins > b.Wins end)
- stateRemote:FireClient(player, {Data = s.Data, StaffRoles = Staff.Roles, Waiting = s.Waiting ~= nil, QueueCount = #(s.Customers or {}), Board = board, MarketShare = total > 0 and math.floor((s.SessionDisputed or 0) / total * 100) or 0, Progression = P.View(s.Data, os.time()), Event = cityEvent, Plot = s.Plot, Trend = trend, TrendSeconds = math.max(0, math.ceil(nextTrend - os.clock())), Message = message, Saving = s.Status, Carrying = carrier == player or (logistics and logistics:Busy(player))})
+ stateRemote:FireClient(player, {ServerTime = os.time(), Data = s.Data, StaffRoles = Staff.Roles, Waiting = s.Waiting ~= nil, QueueCount = #(s.Customers or {}), Board = board, MarketShare = total > 0 and math.floor((s.SessionDisputed or 0) / total * 100) or 0, Progression = P.View(s.Data, os.time()), Event = cityEvent, Plot = s.Plot, Trend = trend, TrendSeconds = math.max(0, math.ceil(nextTrend - os.clock())), Message = message, Saving = s.Status, Carrying = carrier == player or (logistics and logistics:Busy(player))})
 end
 local function valid(player)
  local s = sessions[player]
@@ -72,7 +74,11 @@ end
 local function arrive(player, character)
  local s = sessions[player]
  local root = character:WaitForChild("HumanoidRootPart", 10)
- if s and root and character.Parent then character:PivotTo(W.Plots[s.Plot].CF * CFrame.new(0, 4, -21)) W.ApplyPersonal(player, s.Data) end
+ if s and root and character.Parent then
+  character:SetAttribute("CEOPlayerMovement", true)
+  character:SetAttribute("StarterBoostEnds", s.Data.StarterBoostEnds or 0)
+  Movement.Apply(character)
+  character:PivotTo(W.Plots[s.Plot].CF * CFrame.new(0, 4, -21)) W.ApplyPersonal(player, s.Data) end
 end
 local function join(player)
  local taken = {} for _, s in pairs(sessions) do taken[s.Plot] = true end
@@ -86,6 +92,7 @@ local function join(player)
    return store:UpdateAsync("Player_" .. player.UserId, function(old)
     if old and old.Lock and old.Lock.Id ~= lockId and os.time() - old.Lock.Time < 180 then return nil end
     local result = old or {Data = E.New(), Version = 1}
+    Movement.Init(result.Data, os.time())
     offlineEarned = P.Offline(result.Data, os.time(), E.Sale)
     result.Lock = {Id = lockId, Time = os.time()}
     return result
@@ -98,6 +105,7 @@ local function join(player)
  if player.Parent ~= Players then save(player, true) sessions[player] = nil return end
  P.Init(s.Data, os.time())
  Staff.Init(s.Data)
+ Movement.Init(s.Data, os.time())
  s.Ready = true
  W.UpdatePlot(index, player, s.Data)
  player.CharacterAdded:Connect(function(char) arrive(player, char) end)
@@ -109,7 +117,7 @@ local function join(player)
 end
 local function dropVIP()
  if vip then Carry.Release(vip) end
- if carrier and carrier.Character then local h = carrier.Character:FindFirstChildOfClass("Humanoid") if h then h.WalkSpeed = 16 end end
+ if carrier then Movement.Apply(carrier.Character) end
  carrier = nil
  if vip then vip:Destroy() vip = nil end
 end
@@ -167,7 +175,7 @@ remote.OnServerEvent:Connect(function(player, action, value)
   if d.Product ~= cityEvent.Product or d.Stock < 1 then send(player, "Il faut du stock de " .. C.Products[cityEvent.Product].Name .. ".") return end
   local amount = 0
   local units = math.min(5, d.Stock, cityEvent.Target - cityEvent.Units)
-  for _ = 1, units do amount += E.Sale(d, 1.5) P.OnSale(d, "Collective", os.time()) end
+  for _ = 1, units do amount += E.Sale(d, EventInfo.CollectiveBonus) P.OnSale(d, "Collective", os.time()) end
   cityEvent.Units += units
   send(player, "Contribution : " .. units .. " produits, +" .. amount .. " $. Merci !")
   return
@@ -243,7 +251,7 @@ task.spawn(function()
     if s.Data.Stock < 1 then send(player, "Il te faut du stock pour accueillir ce client.") return end
     Carry.new(player.Character, vip, "VIP"):Attach()
     carrier = player prompt.Enabled = false
-    player.Character.Humanoid.WalkSpeed = 11
+    Movement.Apply(player.Character)
     send(player, "Ramène le VIP à ton comptoir : une vente à triple prix !")
    end)
   end
@@ -255,7 +263,7 @@ task.spawn(function()
    else
     if (root.Position - W.Plots[s.Plot].CF.Position).Magnitude < 16 then
      if W.CheckIn(carrier, vip, 3, "VIP") then
-      local player = carrier hum.WalkSpeed = 16 vip, carrier = nil, nil
+      local player = carrier Movement.Apply(player.Character) vip, carrier = nil, nil
       send(player, "VIP accueilli : il va attendre son encaissement au comptoir.")
      end
     end
@@ -294,11 +302,11 @@ task.spawn(function()
    customers:Prune(player, s)
    if s.Waiting and d.Staff.Cashier > 0 and os.clock() - s.ArrivedAt >= interval then checkout(player, s) end
    if seconds % interval == 0 and d.Stock > 0 then
-    local bonus = cityEvent.Kind == "Tendance surprise" and d.Product == cityEvent.Product and 1.3 or 1
+    local bonus = cityEvent.Kind == "Tendance surprise" and d.Product == cityEvent.Product and EventInfo.TrendBonus or 1
     invite(player, s, bonus, "Local")
    end
    if cityEvent.Kind == "Bus de touristes" and seconds % 3 == 0 and d.Product == cityEvent.Product and d.Stock > 0 then
-    invite(player, s, 1.2, "Touriste")
+    invite(player, s, EventInfo.BusBonus, "Touriste")
    end
    if d.AutoOrder and d.Staff.Buyer > 0 and d.Stock <= 2 + d.Staff.Buyer and not d.Order and not d.Parcel then
     local ok = E.Action(d, "Order")
@@ -325,6 +333,7 @@ task.spawn(function()
  end
 end)
 RunService.Heartbeat:Connect(function(dt)
+ for player, s in pairs(sessions) do if s.Ready then Movement.Apply(player.Character) end end
  for player, car in pairs(cars) do
   local occupant = car.Seat.Occupant
   if occupant and Players:GetPlayerFromCharacter(occupant.Parent) ~= player then occupant.Sit = false continue end

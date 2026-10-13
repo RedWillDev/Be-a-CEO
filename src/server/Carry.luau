@@ -1,5 +1,6 @@
 -- One attachment lifecycle for every carryable entity. No per-frame PivotTo.
 local TweenService = game:GetService("TweenService")
+local Movement = require(script.Parent.Movement)
 local Carry = {}
 Carry.__index = Carry
 local entities, carriers = {}, {}
@@ -61,6 +62,7 @@ function Carry:Attach()
  end
  self.Character:SetAttribute("CarryKind", self.Kind)
  self.Humanoid.WalkSpeed = 11
+ Movement.Apply(self.Character)
  self.Death = self.Humanoid.Died:Connect(function() self:Detach() end)
  self.Removal = self.Model.Destroying:Connect(function() self:Detach() end)
  self.CharacterRemoval = self.Character.Destroying:Connect(function() self:Detach() end)
@@ -77,6 +79,7 @@ function Carry:Detach()
  for _, item in ipairs(self.Items) do item:Destroy() end
  self.Character:SetAttribute("CarryKind", nil)
  self.Humanoid.WalkSpeed = self.Speed
+ Movement.Apply(self.Character)
  -- Always detach before restoring anchors/collisions: never anchor the player.
  self.Model:SetAttribute("Carried", false)
  for part, properties in pairs(self.Parts) do

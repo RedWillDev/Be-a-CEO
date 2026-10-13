@@ -1,6 +1,7 @@
 local Players = game:GetService("Players")
 local Studio = game:GetService("RunService"):IsStudio()
 local Carry = require(script.Parent.Carry)
+local EventInfo = require(game.ReplicatedStorage.BeACEO.EventInfo)
 local L = {}
 function L.Start(sessions, W, E, P, send, valid, otherCarry)
  local self = {Parcels = {}, Carries = {}}
@@ -190,7 +191,7 @@ function L.Start(sessions, W, E, P, send, valid, otherCarry)
     if (carry.Owner and inShop) or (not carry.Owner and (r.Position - counter.Position).Magnitude < 9) then
      if carry.Owner then self:Receive(carry.Owner, player)
      else
-      if W.CheckIn and W.CheckIn(player, carry.Model, 2, "Touriste") then
+      if W.CheckIn and W.CheckIn(player, carry.Model, EventInfo.TouristBonus, "Touriste") then
        reset(player) send(player, "Vacancier accueilli : encaisse-le au comptoir.")
       end
      end

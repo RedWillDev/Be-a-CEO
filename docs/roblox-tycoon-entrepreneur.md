@@ -311,6 +311,8 @@ Remplace l'ancien découpage V1/V2/V3. **Implémenté** signifie présent dans l
 
 ### O1 — Première réussite guidée
 
+- [x] Boost de vitesse initial +50 % pendant 3 minutes, avec timer ; compatible portage et non renouvelé à la reconnexion en profil publié.
+
 - [ ] Trois cartes illustrées et premier lot offert une seule fois.
 - [ ] Guidage visuel carton → rayons → client → caisse.
 - [ ] Célébration courte de première vente et prochaine amélioration visible.
@@ -349,6 +351,8 @@ Validation joueur : bonus compréhensible, aucune reprise en boutique, double r�
 Validation joueur : comprendre quoi obtenir et comment ; retrouver sa collection après reconnexion.
 
 ### O5 — Événements du quartier
+
+- [x] Bandeau permanent avec compte à rebours et bonus pour chaque événement actuellement implémenté ; à étendre lors de l'ajout des nouveaux événements.
 
 - [ ] Enrichir le bus avec les nouveaux vacanciers.
 - [ ] Faire de la commande collective une fête visible et coopérative.

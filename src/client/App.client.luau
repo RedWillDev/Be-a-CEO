@@ -3,6 +3,8 @@ local player = Players.LocalPlayer
 local shared = game.ReplicatedStorage:WaitForChild("BeACEO")
 local C = require(shared:WaitForChild("Config"))
 local Guide = require(shared:WaitForChild("NextStep"))
+local EventInfo = require(shared:WaitForChild("EventInfo"))
+local snapshotClock = 0
 local command = shared:WaitForChild("Command")
 local state = shared:WaitForChild("State")
 local gui = Instance.new("ScreenGui")
@@ -45,6 +47,23 @@ end
 local cash = stat("Cash", "$  ARGENT", mint, 0)
 local level = stat("Level", "★  ENTREPRISE", Color3.fromRGB(255, 208, 92), 1/3)
 local stock = stat("Stock", "▣  STOCK", Color3.fromRGB(115, 185, 255), 2/3)
+local eventPanel = Instance.new("Frame")
+eventPanel.Name, eventPanel.BackgroundColor3, eventPanel.Parent = "EventTimers", navy, gui
+round(eventPanel, 14) outline(eventPanel, mint)
+local eventTitle = label(eventPanel, "ÉVÉNEMENT", UDim2.new(1, -20, 0, 20), UDim2.fromOffset(10, 4), 14, mint)
+local eventBonus = label(eventPanel, "", UDim2.new(1, -20, 0, 30), UDim2.fromOffset(10, 25), 12)
+local starterTimer = label(eventPanel, "", UDim2.new(1, -20, 0, 22), UDim2.fromOffset(10, 56), 12, Color3.fromRGB(255, 208, 92))
+local function updateTimers()
+ if not latest then return end
+ local now = (latest.ServerTime or os.time()) + (os.clock() - snapshotClock)
+ local e = latest.Event
+ local remaining = math.max(0, e.Ends - now)
+ eventTitle.Text = (e.Kind == "Préparation" and "Prochain événement" or e.Kind) .. " • " .. EventInfo.Timer(remaining)
+ eventBonus.Text = remaining > 0 and EventInfo.Describe(e) or "Changement d'événement…"
+ local boost = math.max(0, (latest.Data.StarterBoostEnds or 0) - now)
+ starterTimer.Visible = boost > 0
+ starterTimer.Text = "DÉPART RAPIDE • vitesse +50 % • " .. EventInfo.Timer(boost)
+end
 local nav = Instance.new("Frame") nav.Name, nav.BackgroundTransparency, nav.Parent = "Navigation", 1, gui
 local shade = Instance.new("TextButton") shade.Name = "ModalBackdrop" shade.Text = ""
 shade.Size, shade.BackgroundColor3, shade.BackgroundTransparency = UDim2.fromScale(1, 1), Color3.new(), 0.4
@@ -83,10 +102,10 @@ local function resize()
  local small, landscape = v.X < 700, v.Y < 500
  local width = math.min(620, v.X - 20)
  top.Size, top.Position = UDim2.fromOffset(width, 62), UDim2.new(0.5, -width/2, 0, 8)
- local panelY = landscape and 78 or 134
+ local panelY = landscape and 130 or 172
  panel.Size = UDim2.fromOffset(math.min(650, v.X - 24), math.max(150, v.Y - panelY - 32))
  panel.Position = UDim2.new(0.5, -math.min(650, v.X - 24)/2, 0, panelY)
- nav.Size, nav.Position = landscape and UDim2.fromOffset(98, 210) or UDim2.fromOffset(small and 104 or 130, 290), UDim2.fromOffset(10, 82)
+ nav.Size, nav.Position = landscape and UDim2.fromOffset(98, 210) or UDim2.fromOffset(small and 104 or 130, 290), UDim2.fromOffset(10, 172)
  for i, b in ipairs(navigation) do
   b.Size = UDim2.new(1, 0, 0, landscape and 36 or small and 44 or 50)
   b.Position = UDim2.fromOffset(0, (i-1) * (landscape and 41 or small and 50 or 58))
@@ -96,12 +115,27 @@ local function resize()
   nav.Size, nav.Position = UDim2.fromOffset(width, 42), UDim2.new(0.5, -width/2, 0, 80)
   for i, b in ipairs(navigation) do b.Size, b.Position, b.TextSize = UDim2.new(0.2, -5, 1, 0), UDim2.new((i-1)/5, 0, 0, 0), 12 end
  end
+ if landscape then
+  local half = (v.X - 30) / 2
+  top.Size, top.Position = UDim2.fromOffset(half, 62), UDim2.fromOffset(10, 8)
+  eventPanel.Size, eventPanel.Position = UDim2.fromOffset(half, 66), UDim2.fromOffset(20 + half, 6)
+  eventTitle.TextSize, eventBonus.TextSize, starterTimer.TextSize = 12, 11, 11
+  eventTitle.Position, eventTitle.Size = UDim2.fromOffset(10, 2), UDim2.new(1, -20, 0, 18)
+  eventBonus.Position, eventBonus.Size = UDim2.fromOffset(10, 20), UDim2.new(1, -20, 0, 28)
+  starterTimer.Position, starterTimer.Size = UDim2.fromOffset(10, 48), UDim2.new(1, -20, 0, 16)
+ else
+  eventPanel.Size, eventPanel.Position = UDim2.fromOffset(width, 82), UDim2.new(0.5, -width/2, 0, 78)
+  eventTitle.TextSize, eventBonus.TextSize, starterTimer.TextSize = 14, 12, 12
+  eventTitle.Position, eventTitle.Size = UDim2.fromOffset(10, 4), UDim2.new(1, -20, 0, 20)
+  eventBonus.Position, eventBonus.Size = UDim2.fromOffset(10, 25), UDim2.new(1, -20, 0, 30)
+  starterTimer.Position, starterTimer.Size = UDim2.fromOffset(10, 56), UDim2.new(1, -20, 0, 22)
+ end
  local ow = math.min(450, v.X - (landscape and 260 or 24))
  objective.Size = UDim2.fromOffset(ow, 66)
  objective.Position = UDim2.new(0.5, -ow/2, 1, small and -165 or -82)
  drop.Position = UDim2.new(0.5, -75, 1, small and -215 or -134)
  toast.Size = UDim2.fromOffset(math.min(600, v.X - 24), 48)
- toast.Position = UDim2.new(0.5, -math.min(600, v.X - 24)/2, 0, landscape and 8 or 78)
+ toast.Position = UDim2.new(0.5, -math.min(600, v.X - 24)/2, 1, -58)
 end
 local cameraConnection
 local function watchCamera()
@@ -232,6 +266,8 @@ table.insert(navigation, button(nav, "⌂  MA BOUTIQUE", UDim2.new(), UDim2.new(
 resize()
 state.OnClientEvent:Connect(function(snapshot)
  local previous = latest latest = snapshot
+ snapshotClock = os.clock()
+ updateTimers()
  local d = snapshot.Data
  cash.Text = string.format("%d $", d.Cash)
  level.Text = C.Levels[d.Level].Name
@@ -253,7 +289,7 @@ state.OnClientEvent:Connect(function(snapshot)
  end
  if liveLabels.marketInfo then liveLabels.marketInfo.Text = "Tendance : " .. C.Products[snapshot.Trend].Name .. " • " .. snapshot.TrendSeconds .. " s\nFile : " .. (snapshot.QueueCount or 0) .. "/3 • " .. snapshot.Saving end
  if liveLabels.order then liveLabels.order.Text = d.Parcel and "Colis devant la porte • à réceptionner" or d.Order and (d.Order.Remaining > 0 and ("Expédition dans " .. d.Order.Remaining .. " s…") or "Camionnette en approche / déchargement…") or ("Commander 10 unités • " .. math.ceil(C.Products[d.Product].Cost * 10 * C.Suppliers[d.Supplier].Factor * (d.Negotiated and (1 - (d.Discount or 0.1)) or 1)) .. " $") end
- if liveLabels.event then local e = snapshot.Event liveLabels.event.Text = e.Kind .. " • " .. C.Products[e.Product].Name .. "\nFin dans " .. math.max(0, e.Ends - os.time()) .. " s • collectif " .. e.Units .. "/" .. e.Target .. "\nTouristes : +20 % ; tendance surprise : +30 % sur les ventes locales concernées." end
+ if liveLabels.event then local e = snapshot.Event liveLabels.event.Text = e.Kind .. " • " .. EventInfo.Timer(e.Ends - snapshot.ServerTime) .. "\n" .. EventInfo.Describe(e) end
  if liveLabels.reputation then liveLabels.reputation.Text = "Réputation : " .. snapshot.Progression.Reputation .. "/100 • clients disputés gagnés : " .. d.Disputed .. "\nPublicité restante : " .. snapshot.Progression.Marketing .. " s. Les clients privilégient tour à tour qualité, tendance ou prix." end
  if liveLabels.board then
   local lines = {"Part des clients disputés (joueurs présents, session) : " .. snapshot.MarketShare .. "%"}
@@ -263,5 +299,8 @@ state.OnClientEvent:Connect(function(snapshot)
  if liveLabels.progress then liveLabels.progress.Text = "Entreprise : " .. C.Levels[d.Level].Name .. "\n" .. d.Sales ..  " ventes • argent gagné au total " .. d.Revenue .. " $\nLes achats personnels ne comptent pas comme investissement." end
  if snapshot.Message == "OPEN_MARKET" then showTab("Marché")
  elseif snapshot.Message then notice(snapshot.Message) end
+end)
+task.spawn(function()
+ while gui.Parent do updateTimers() task.wait(0.2) end
 end)
 fire("Ready")
