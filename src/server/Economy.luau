@@ -1,5 +1,6 @@
 local C = require(game.ReplicatedStorage.BeACEO.Config)
 local E = {}
+function E.Capacity(d) return C.StockCapacity(d.Level) end
 function E.New()
  return {Cash = 500, Level = 1, Sales = 0, Revenue = 0, Stock = 0, Quality = 1, Product = 1, Supplier = 1, PriceMode = 2, Color = 1, Vehicles = {}, Luxuries = {}, Negotiated = false}
 end
@@ -28,7 +29,7 @@ function E.Action(d, action, value, now)
   return true, value == "Sample" and "Contrôle qualité offert : +0,2 qualité sur le prochain lot, sans remise." or ("Accord MarketBridge : −" .. math.floor(d.Discount * 100) .. "% sur le prochain lot !")
  elseif action == "Order" then
   if d.Order or d.Parcel then return false, "Une livraison est déjà en route ou attend devant la porte." end
-  if d.Stock > 40 then return false, "Stock presque plein : vends avant de recommander." end
+  if d.Stock + 10 > E.Capacity(d) then return false, "Stock presque plein : vends ou améliore ta boutique avant de recommander." end
   local cost = E.OrderCost(d)
   if d.Cash < cost then return false, "Trésorerie insuffisante pour ce lot." end
   d.Cash -= cost

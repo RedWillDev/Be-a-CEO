@@ -26,6 +26,7 @@ W.CityEvent(cityEvent)
 local function send(player, message)
  local s = sessions[player]
  if not s then return end
+ if s.Ready then W.UpdateStock(s.Plot, s.Data) end
  local board, total = {}, 0
  for participant, session in pairs(sessions) do
   if session.Ready then

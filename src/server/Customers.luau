@@ -22,7 +22,7 @@ function Customers:Label(entry, slot)
   local text = Instance.new("TextLabel") text.Size, text.BackgroundTransparency = UDim2.fromScale(1, 1), 1
   text.TextColor3, text.TextSize, text.Parent = Color3.fromRGB(220, 245, 235), 15, label
  end
- label.TextLabel.Text = entry.Moving and "Rejoint la file" or (slot == 1 and "En attente de paiement" or "File : " .. slot)
+ label.TextLabel.Text = entry.Browsing and "Choisit un produit" or entry.Moving and "Rejoint la file" or (slot == 1 and "En attente de paiement" or "File : " .. slot)
 end
 function Customers:Remove(player, s, entry)
  local index = table.find(s.Customers or {}, entry)
@@ -42,6 +42,24 @@ function Customers:FinishMove(player, s, entry, slot, reached)
  self.World.FaceQueue(entry.Model, s.Plot)
  self:Refresh(player, s)
  self.Send(player)
+end
+function Customers:FinishBrowse(player, s, entry, reached)
+ if not table.find(s.Customers or {}, entry) then return end
+ if not reached or not self.Valid(player) or not entry.Model.Parent or s.Data.Stock < 1 then self:Remove(player, s, entry) return end
+ local position = entry.Model.PrimaryPart.Position
+ local towardShelf = self.World.Plots[s.Plot].CF:VectorToWorldSpace(Vector3.new(-1, 0, 0))
+ entry.Model:PivotTo(CFrame.lookAt(position, position + towardShelf))
+ task.delay(1.5, function()
+  local slot = table.find(s.Customers or {}, entry)
+  if not slot then return end
+  if not self.Valid(player) or not entry.Model.Parent or s.Data.Stock < 1 then self:Remove(player, s, entry) return end
+  entry.Browsing = false
+  local cf = self.World.Plots[s.Plot].CF
+  self.World.Route(entry.Model, {(cf * CFrame.new(-11, 3.5, -6)).Position, self.World.QueuePosition(s.Plot, slot)}, function(arrived)
+   self:FinishMove(player, s, entry, slot, arrived)
+  end)
+  self:Refresh(player, s)
+ end)
 end
 function Customers:Refresh(player, s)
  for slot, entry in ipairs(s.Customers or {}) do
@@ -65,8 +83,8 @@ function Customers:Invite(player, s, bonus, kind)
  if not self:CanJoin(s) then return end
  s.Customers = s.Customers or {}
  local slot = #s.Customers + 1
- local entry = {Bonus = bonus, Kind = kind, Moving = true}
- local model = self.World.Visit(s.Plot, function(_, reached) self:FinishMove(player, s, entry, slot, reached) end, slot)
+ local entry = {Bonus = bonus, Kind = kind, Moving = true, Browsing = true}
+ local model = self.World.Visit(s.Plot, function(_, reached) self:FinishBrowse(player, s, entry, reached) end, slot)
  if not model then return end
  entry.Model = model table.insert(s.Customers, entry)
  self:Refresh(player, s)
@@ -74,10 +92,10 @@ end
 function Customers:Admit(player, s, npc, bonus, kind)
  s.Customers = s.Customers or {}
  local slot = #s.Customers + 1
- local entry = {Model = npc, Bonus = bonus, Kind = kind, Moving = true}
+ local entry = {Model = npc, Bonus = bonus, Kind = kind, Moving = true, Browsing = true}
  table.insert(s.Customers, entry)
  npc:SetAttribute("Shopping", true)
- self.World.Route(npc, {self.World.QueuePosition(s.Plot, slot)}, function(reached) self:FinishMove(player, s, entry, slot, reached) end)
+ self.World.Browse(npc, s.Plot, slot, function(reached) self:FinishBrowse(player, s, entry, reached) end)
  self:Refresh(player, s)
 end
 function Customers:Clear(s)

@@ -81,7 +81,7 @@ function L.Start(sessions, W, E, P, send, valid, otherCarry)
   local a, b = sessions[owner], sessions[recipient]
   if not a or not b or not valid(owner) or not valid(recipient) then return false end
   local parcel = a.Data.Parcel
-  if not parcel or b.Data.Product ~= parcel.Product or b.Data.Stock + parcel.Units > 50 then return false end
+  if not parcel or b.Data.Product ~= parcel.Product or b.Data.Stock + parcel.Units > E.Capacity(b.Data) then return false end
   -- Cross-profile transfers are experimental and deliberately unavailable on live servers.
   if owner ~= recipient and (not Studio or not a.Data.Rivalry or not b.Data.Rivalry or a.Data.Level < 2 or b.Data.Level < 2) then return false end
   local d = b.Data

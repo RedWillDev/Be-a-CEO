@@ -8,6 +8,15 @@ local function check(condition, message)
  assert(condition, "[Be-a-CEO checks] " .. message)
 end
 local a, b = E.New(), E.New()
+for level = 1, #C.Levels do
+ local d = E.New()
+ d.Level, d.Cash = level, 10000
+ check(E.Capacity(d) == 25 * (level + 1), "capacity grows with company")
+ d.Stock = E.Capacity(d) - 9
+ check(not E.Action(d, "Order") and d.Cash == 10000, "reject overflow without charging")
+ d.Stock = E.Capacity(d) - 10
+ check(E.Action(d, "Order"), "accept exact capacity batch")
+end
 check(a.Cash == 500 and a.Stock == 0, "starting balance")
 check(E.Action(a, "Negotiate", "Volume"), "negotiation accepted")
 check(E.OrderCost(a) == 162, "discount calculation")

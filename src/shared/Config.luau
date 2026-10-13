@@ -30,4 +30,7 @@ C.Luxuries = {
  {Name = "Sculpture signature", Cost = 3500, Level = 3},
 }
 C.Palette = {Color3.fromRGB(77, 209, 170), Color3.fromRGB(248, 158, 101), Color3.fromRGB(125, 155, 249), Color3.fromRGB(220, 142, 234)}
+function C.StockCapacity(level)
+ return (math.clamp(level or 1, 1, #C.Levels) + 1) * 25
+end
 return C

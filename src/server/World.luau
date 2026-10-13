@@ -87,7 +87,7 @@ function W.Visit(index, arrived, slot)
  end
  if not candidate then return nil end
  candidate:SetAttribute("Shopping", true)
- W.Route(candidate, {Vector3.new(cf.X, 23.7, z), (cf * CFrame.new(5, 3, -19)).Position, W.QueuePosition(index, slot or 1)}, function(reached)
+ W.Route(candidate, {Vector3.new(cf.X, 23.7, z), (cf * CFrame.new(-11, 3, -19)).Position, W.BrowsePosition(index, slot or 1)}, function(reached)
   arrived(candidate, reached)
  end)
  return candidate
@@ -191,10 +191,10 @@ function W.UpdatePlot(index, player, data)
  local level = data and data.Level or 1
  local color = C.Palette[data and data.Color or ((index - 1) % 4 + 1)]
  local function p(n, s, x, y, z, c, mat) return W.Part(m, n, s, cf * CFrame.new(x, y, z), c, mat) end
- p("Floor", Vector3.new(37, 0.5, 29), 0, 0.5, 2, cream)
- p("Back", Vector3.new(38, 11, 1), 0, 6, 16, dark)
- for _, x in ipairs({-19, 19}) do p("Wall", Vector3.new(1, 11, 29), x, 6, 2, cream) end
- p("Roof", Vector3.new(40, 1, 32), 0, 12, 2, dark)
+ p("Floor", Vector3.new(37, 0.5, 41), 0, 0.5, 8, cream)
+ p("Back", Vector3.new(38, 11, 1), 0, 6, 28, dark)
+ for _, x in ipairs({-19, 19}) do p("Wall", Vector3.new(1, 11, 41), x, 6, 8, cream) end
+ p("Roof", Vector3.new(40, 1, 44), 0, 12, 8, dark)
  p("Counter", Vector3.new(18, 3, 3), 0, 2, 1, color)
  local register = p("CashRegister", Vector3.new(2, 1, 2), 5, 4, 1, dark)
  local checkout = Instance.new("ProximityPrompt")
@@ -221,30 +221,42 @@ function W.UpdatePlot(index, player, data)
      local function status() label.Text = "RÉCEPTION\n" .. (employee:GetAttribute("ReceiverStatus") or "Disponible") end
      employee:GetAttributeChangedSignal("ReceiverStatus"):Connect(status) status()
     else
-     local employee = W.Person(m, role, cf * CFrame.new(-14 + i * 6, 0.5, 8), C.Palette[i])
-     W.Wander(employee, {(cf * CFrame.new(-16 + i * 6, 3.5, 8)).Position, (cf * CFrame.new(-12 + i * 6, 3.5, 10)).Position}, 2.5, 4)
+     local x = role == "Buyer" and -6 or 7
+     local employee = W.Person(m, role, cf * CFrame.new(x, 0.75, 23.5), C.Palette[i])
+     employee.Humanoid.WalkSpeed, employee.Humanoid.AutoRotate = 0, false
+     employee.PrimaryPart.Anchored = true
+     employee:SetAttribute("Stationary", true)
     end
    end
   end
  end
- for x = -6, 6, 6 do
-  local product = data and data.Product or 1
-  local productColor = C.Products[product].Color
-  if product == 1 then
-   p("ShoeSole", Vector3.new(2, 0.3, 3), x, 3.8, 1, cream)
-   p("ShoeUpper", Vector3.new(1.8, 0.9, 2.7), x, 4.4, 1, productColor)
-   p("ShoeHeel", Vector3.new(1.8, 0.8, 0.8), x, 5, 2, productColor)
-  elseif product == 2 then
-   for _, offset in ipairs({-1, 1}) do p("EarCup", Vector3.new(0.6, 1.8, 1), x + offset, 4.8, 1, productColor) end
-   p("Headband", Vector3.new(2.5, 0.4, 0.7), x, 5.8, 1, dark)
-  else
-   p("ToyBody", Vector3.new(1.3, 1.5, 1), x, 4.5, 1, productColor)
-   local head = p("ToyHead", Vector3.new(1.2, 1.2, 1.2), x, 5.8, 1, productColor) head.Shape = Enum.PartType.Ball
-  end
+ -- Each rack adds 25 physical display slots and 25 units of capacity.
+ for rack = 1, level + 1 do
+  local z = -8 + (rack - 1) * 6
+  p("ShelfBack", Vector3.new(0.3, 7.6, 5), -18, 4.6, z, dark)
+  for _, edge in ipairs({-2.5, 2.5}) do p("ShelfUpright", Vector3.new(3, 7.6, 0.18), -16.6, 4.6, z + edge, color) end
+  for row = 0, 4 do p("ShelfBoard", Vector3.new(3, 0.18, 5), -16.6, 1 + row * 1.4, z, cream) end
  end
+ local inventory = Instance.new("Folder") inventory.Name, inventory.Parent = "VisibleStock", m
+ local stockSign = W.Sign(m, "", cf * CFrame.new(-16, 9, -10.7), Vector3.new(5, 1.2, 0.2), color)
+ stockSign.Name = "StockSign"
+ -- Offices are at the rear, away from the queue and delivery lane.
+ for _, station in ipairs({{Role = "Buyer", X = -6, Title = "COMMANDES"}, {Role = "Manager", X = 7, Title = "DIRECTION"}}) do
+  local x = station.X
+  p(station.Role .. "Desk", Vector3.new(8, 0.5, 3), x, 3.2, 20, color)
+  for _, dx in ipairs({-3, 3}) do p("DeskLeg", Vector3.new(0.4, 2.4, 2.4), x + dx, 1.9, 20, dark) end
+  p("MonitorStand", Vector3.new(1, 0.6, 0.8), x, 3.75, 20, dark)
+  p("Monitor", Vector3.new(2.8, 1.8, 0.3), x, 4.7, 20, dark)
+  p("Keyboard", Vector3.new(2.4, 0.15, 0.7), x, 3.55, 21, cream)
+  local sign = W.Sign(m, station.Title, cf * CFrame.new(x, 7, 26.8), Vector3.new(8, 1.5, 0.2), color)
+  sign.Name = station.Role .. "Station"
+ end
+ local receiving = p("ReceivingZone", Vector3.new(7, 0.04, 7), 13, 0.78, -7, color)
+ receiving.CanCollide, receiving.CanTouch = false, false
+ W.Sign(m, "RÉCEPTION", cf * CFrame.new(15, 7, -3), Vector3.new(6, 1.3, 0.2), color)
  for floor = 2, level do
-  p("UpperFloor", Vector3.new(38, 9, 29), 0, 12 + (floor - 1) * 9 - 4, 2, dark)
-  p("Accent", Vector3.new(40, 0.7, 31), 0, 12 + (floor - 1) * 9, 2, color)
+  p("UpperFloor", Vector3.new(38, 9, 41), 0, 12 + (floor - 1) * 9 - 4, 8, dark)
+  p("Accent", Vector3.new(40, 0.7, 43), 0, 12 + (floor - 1) * 9, 8, color)
   for x = -14, 14, 7 do p("Window", Vector3.new(4.7, 5, 0.3), x, 12 + (floor - 1) * 9 - 4, -12.7, Color3.fromRGB(134, 184, 200), Enum.Material.Glass) end
  end
  local title = player and (player.DisplayName .. " • " .. C.Levels[level].Name) or ("PARCELLE " .. index .. " / DISPONIBLE")
@@ -271,13 +283,68 @@ function W.UpdatePlot(index, player, data)
    end
   end
  end
- local terminal = p("MarketBridge", Vector3.new(4, 3, 1), -12, 3, -8, dark)
+ local terminal = p("MarketBridge", Vector3.new(4, 3, 1), -4, 3, 6, dark)
  local prompt = Instance.new("ProximityPrompt")
  prompt.ActionText, prompt.ObjectText, prompt.MaxActivationDistance = "Gérer mon entreprise", "MarketBridge", 12
  prompt.RequiresLineOfSight = false prompt.Parent = terminal
  prompt.Triggered:Connect(function(ply) if W.OnTerminal then W.OnTerminal(ply, index) end end)
+ W.UpdateStock(index, data)
  return m
 end
+
+-- Change display units only; never rebuild employees or interrupt their delivery routes.
+function W.UpdateStock(index, data)
+ local plot = W.Plots[index]
+ local m = plot and plot.Model
+ if not m then return end
+ local inventory = m:FindFirstChild("VisibleStock")
+ if not inventory then return end
+ local product = data and data.Product or 1
+ local stock = data and data.Stock or 0
+ if inventory:GetAttribute("Product") ~= product then inventory:ClearAllChildren() inventory:SetAttribute("Product", product) end
+ local count = math.min(stock, C.StockCapacity(data and data.Level or 1))
+ for _, unit in ipairs(inventory:GetChildren()) do
+  if tonumber(unit.Name) > count then unit:Destroy() end
+ end
+ for i = 1, count do
+  if inventory:FindFirstChild(tostring(i)) then continue end
+  local rack, position = math.floor((i - 1) / 25), (i - 1) % 25
+  local row, column = math.floor(position / 5), position % 5
+  local cf = plot.CF * CFrame.new(-16.4, 1.12 + row * 1.4, -8 + rack * 6 + (column - 2) * 0.85)
+  local unit = Instance.new("Model") unit.Name, unit.Parent = tostring(i), inventory
+  local color = C.Products[product].Color
+  local function part(name, size, offset, tint)
+   local p = W.Part(unit, name, size, cf * CFrame.new(offset), tint)
+   p.CanCollide, p.CanTouch, p.CanQuery = false, false, false
+   return p
+  end
+  if product == 1 then
+   part("Sole", Vector3.new(1.3, 0.13, 0.6), Vector3.new(0, 0.07, 0), cream)
+   part("Shoe", Vector3.new(1.1, 0.4, 0.55), Vector3.new(0, 0.32, 0), color)
+  elseif product == 2 then
+   for _, z in ipairs({-0.24, 0.24}) do part("EarCup", Vector3.new(0.5, 0.6, 0.16), Vector3.new(0, 0.32, z), color) end
+   part("Headband", Vector3.new(0.2, 0.15, 0.65), Vector3.new(0, 0.69, 0), dark)
+  else
+   part("Body", Vector3.new(0.5, 0.45, 0.45), Vector3.new(0, 0.25, 0), color)
+   part("Head", Vector3.new(0.4, 0.4, 0.4), Vector3.new(0, 0.68, 0), color).Shape = Enum.PartType.Ball
+  end
+ end
+ m.StockSign.SurfaceGui.TextLabel.Text = C.Products[product].Name .. "\n" .. stock .. " / " .. C.StockCapacity(data and data.Level or 1)
+ local staff = data and data.Staff or {}
+ m.BuyerStation.SurfaceGui.TextLabel.Text = "COMMANDES\n" .. ((staff.Buyer or 0) < 1 and "Poste à pourvoir" or data.Order and "Livraison en cours" or data.Parcel and "Réception attendue" or data.AutoOrder and "Achats automatiques actifs" or "Achats automatiques en pause")
+ m.ManagerStation.SurfaceGui.TextLabel.Text = "DIRECTION\n" .. ((staff.Manager or 0) < 1 and "Gérant : niveau 4" or data.ManagerEnabled and "Gestion active" or "Gestion en pause")
+end
+function W.BrowsePosition(index, slot)
+ local plot = W.Plots[index]
+ local inventory = plot.Model and plot.Model:FindFirstChild("VisibleStock")
+ local stockedRacks = math.clamp(math.ceil((inventory and #inventory:GetChildren() or 0) / 25), 1, 2)
+ return (plot.CF * CFrame.new(-11, 3.5, -8 + ((slot - 1) % stockedRacks) * 6)).Position
+end
+function W.Browse(model, index, slot, done)
+ local cf = W.Plots[index].CF
+ W.Route(model, {(cf * CFrame.new(-11, 3.5, -11)).Position, W.BrowsePosition(index, slot)}, done)
+end
+
 function W.ApplyPersonal(player, data)
  local character = player.Character
  if not character or not data.Luxuries["1"] then return end

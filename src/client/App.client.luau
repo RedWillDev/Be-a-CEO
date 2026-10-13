@@ -155,7 +155,7 @@ local function render()
  elseif currentTab == "Entreprise" then
   liveLabels.progress = textRow("", 75)
   local nextLevel = C.Levels[d.Level + 1]
-  if nextLevel then card("Passer à " .. nextLevel.Name, nextLevel.Cost .. " $ • " .. nextLevel.Sales .. " ventes cumulées requises", "Agrandir mon entreprise", function() fire("Upgrade") end) end
+  if nextLevel then card("Passer à " .. nextLevel.Name, nextLevel.Cost .. " $ • " .. nextLevel.Sales .. " ventes requises • +1 rayon, stock " .. C.StockCapacity(d.Level + 1), "Agrandir mon entreprise", function() fire("Upgrade") end) end
   textRow("Équipe • recrutement et formations payés une fois, sans salaire récurrent pour cette version. Trois niveaux par poste.", 70)
   for i, role in ipairs(latest.StaffRoles or {}) do
    local rank = d.Staff and d.Staff[role.Key] or 0
@@ -220,7 +220,7 @@ state.OnClientEvent:Connect(function(snapshot)
  local d = snapshot.Data
  cash.Text = string.format("%d $", d.Cash)
  level.Text = C.Levels[d.Level].Name
- stock.Text = string.format("%d / 50", d.Stock)
+ stock.Text = string.format("%d / %d", d.Stock, C.StockCapacity(d.Level))
  objectiveText.Text = snapshot.Carrying and "Ramène ce que tu portes dans ta boutique." or d.Parcel and "Un colis attend devant ta boutique." or snapshot.Waiting and ("Encaisse le premier client • File " .. (snapshot.QueueCount or 0) .. "/3") or d.Order and "Livraison en cours : prépare ta boutique." or d.Stock == 0 and "Ouvre BOUTIQUE et commande un lot." or "Développe ton équipe et améliore ta boutique."
  drop.Visible = snapshot.Carrying == true and not panel.Visible
  local changed = not previous
