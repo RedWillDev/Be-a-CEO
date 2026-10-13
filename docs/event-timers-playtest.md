@@ -1,5 +1,13 @@
 # Timers et départ rapide
 
+## Présentation circulaire
+
+Les anciens badges rectangulaires sont remplacés par des pastilles rondes : multiplicateur au centre, nom au-dessus et compte à rebours dessous. Argent jaune, vitesse cyan, bus orange, tendance violette, collectif vert ; préparation neutre sans faux bonus.
+
+Le contour comporte 24 segments représentant le temps restant. Une pulsation douce de 3,5 % au maximum intervient pendant les 15 dernières secondes, sans clignotement ni changement du délai réel. Les pastilles de départ disparaissent à expiration. Le format est compact en paysage ; le détail complet des effets reste disponible dans Missions.
+
+À vérifier par le joueur : textes centrés, couleurs, contour qui se vide, expiration, menus ouverts et téléphone dans les deux orientations. Aucune économie ni durée modifiée par cette refonte graphique.
+
 Le HUD affiche en permanence l'événement courant, son temps restant et les bonus correspondants. Préparation affiche le temps avant le prochain événement sans inventer de bonus. Les futurs événements de la roadmap ne sont pas encore implémentés.
 
 - Bus : clients bonus +20 % pour le produit demandé ; vacanciers portés x2.
