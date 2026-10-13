@@ -175,7 +175,7 @@ remote.OnServerEvent:Connect(function(player, action, value)
   if d.Product ~= cityEvent.Product or d.Stock < 1 then send(player, "Il faut du stock de " .. C.Products[cityEvent.Product].Name .. ".") return end
   local amount = 0
   local units = math.min(5, d.Stock, cityEvent.Target - cityEvent.Units)
-  for _ = 1, units do amount += E.Sale(d, EventInfo.CollectiveBonus) P.OnSale(d, "Collective", os.time()) end
+  for _ = 1, units do amount += E.Sale(d, EventInfo.CollectiveBonus, os.time()) P.OnSale(d, "Collective", os.time()) end
   cityEvent.Units += units
   send(player, "Contribution : " .. units .. " produits, +" .. amount .. " $. Merci !")
   return
@@ -214,7 +214,7 @@ local function checkout(player, s)
  if not s.Waiting or not s.Visitor or not s.Visitor.Parent then return false end
  local target = W.QueuePosition(s.Plot, 1)
  if (s.Visitor.PrimaryPart.Position - target).Magnitude > 5 then return false end
- local amount = E.Sale(s.Data, s.Waiting)
+ local amount = E.Sale(s.Data, s.Waiting, os.time())
  if amount > 0 then
   P.OnSale(s.Data, s.WaitingKind, os.time())
   if s.WaitingKind == "Disputed" then s.SessionDisputed = (s.SessionDisputed or 0) + 1 end

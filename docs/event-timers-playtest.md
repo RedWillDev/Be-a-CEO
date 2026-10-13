@@ -7,6 +7,8 @@ Le HUD affiche en permanence l'événement courant, son temps restant et les bon
 - Commande collective : contribution +50 %, compteur de produits.
 - Départ rapide : vitesse du personnage +50 % pendant 180 secondes à sa première arrivée sans vente antérieure. Marche 16 → 24 ; portage 11 → 16,5. Pas de changement de vitesse des véhicules ni des employés.
 
+Le départ rapide double aussi l'argent des ventes en jeu pendant la même échéance : caisse manuelle, caissier et contributions collectives. Il se multiplie avec le bonus du client (vacancier x2 puis départ x2 = x4). Cadeaux, récompenses de missions, remboursements et gains hors ligne ne sont pas doublés. Deux badges distincts affichent vitesse et ventes avec le temps restant. Les anciens profils dont le boost est terminé ne reçoivent pas une nouvelle durée.
+
 Le délai est une échéance serveur enregistrée dès l'acquisition du profil publié. Mort et reconnexion ne le renouvellent pas ; le temps continue hors ligne. Les profils déjà avancés n'obtiennent pas le bonus. En Studio, les profils temporaires repartent à zéro à chaque Stop → Play comme le reste du prototype.
 
 Expiration pendant un portage et dépôt après expiration recalculent la vitesse correcte. Le timer client se base sur l'heure reçue du serveur, sans utiliser l'horloge locale pour attribuer le bonus. Les bonus clients existants restent ceux réservés à leur admission.
@@ -20,5 +22,7 @@ Expiration pendant un portage et dépôt après expiration recalculent la vitess
 5. Observer chaque événement : bon bonus, bon compte à rebours, pas de valeurs négatives.
 6. Vérifier téléphone portrait/paysage et menus ouverts : bandeau lisible, commandes accessibles.
 7. Sur serveur de test publié : quitter/rejoindre sans obtenir trois minutes supplémentaires.
+8. Vendre une sneaker au prix normal pendant le boost : 80 $ au lieu de 40 $, une seule unité consommée ; revenir à 40 $ après expiration. Tester aussi caissier, vacancier et cadeau non doublé.
+9. Vérifier « Ta boutique », le repère du colis et celui de la caisse ; les autres joueurs ne doivent pas voir ces indications personnelles. Vérifier leur reconstruction après amélioration du bâtiment.
 
 Génération Rojo et revue du code seulement côté assistant. Les assertions Studio ajoutées et ces essais restent à exécuter par le joueur.

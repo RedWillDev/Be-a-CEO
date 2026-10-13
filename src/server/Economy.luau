@@ -69,9 +69,11 @@ function E.Action(d, action, value, now)
  else return false, "Action inconnue." end
  return true, "Modification enregistrée."
 end
-function E.Sale(d, bonus)
+function E.Sale(d, bonus, liveNow)
  if d.Stock < 1 then return 0 end
- local earned = math.floor(E.Price(d) * (bonus or 1))
+ -- Only live server checkout supplies time; offline sales never get the starter boost.
+ local starter = liveNow and liveNow < (d.StarterBoostEnds or 0) and 2 or 1
+ local earned = math.floor(E.Price(d) * (bonus or 1) * starter)
  d.Stock -= 1 d.Cash += earned d.Sales += 1 d.Revenue += earned
  return earned
 end

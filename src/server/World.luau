@@ -168,6 +168,15 @@ function W.Build()
   end
  end
  local spawn = Instance.new("SpawnLocation")
+ -- Flat markings and non-blocking signs make the central route legible without changing NPC routes.
+ for z = -19, 19, 4 do
+  local stripe = W.Part(city, "Crosswalk", Vector3.new(10, 0.03, 2), CFrame.new(0, 20.28, z), cream)
+  stripe.CanCollide, stripe.CanTouch = false, false
+ end
+ local plazaSign = W.Sign(city, "PLACE / VIP", CFrame.new(0, 25, -96) * CFrame.Angles(0, math.pi, 0), Vector3.new(14, 2, 0.2), C.Palette[1])
+ plazaSign.CanCollide = false
+ local busSign = W.Sign(city, "BUS / VACANCIERS", CFrame.new(10, 25, -36) * CFrame.Angles(0, math.pi, 0), Vector3.new(14, 2, 0.2), Color3.fromRGB(255, 208, 92))
+ busSign.CanCollide = false
  spawn.Name, spawn.Anchored, spawn.Neutral = "CityArrival", true, true
  spawn.Size, spawn.CFrame, spawn.Transparency = Vector3.new(8, 1, 8), CFrame.new(0, 21, 20), 1
  spawn.Parent = city
@@ -191,6 +200,8 @@ function W.UpdatePlot(index, player, data)
  local level = data and data.Level or 1
  local color = C.Palette[data and data.Color or ((index - 1) % 4 + 1)]
  local function p(n, s, x, y, z, c, mat) return W.Part(m, n, s, cf * CFrame.new(x, y, z), c, mat) end
+ local entrance = p("GuideEntrance", Vector3.new(1, 1, 1), 0, 5, -12, color)
+ entrance.Transparency, entrance.CanCollide, entrance.CanTouch, entrance.CanQuery = 1, false, false, false
  p("Floor", Vector3.new(37, 0.5, 41), 0, 0.5, 8, cream)
  p("Back", Vector3.new(38, 11, 1), 0, 6, 28, dark)
  for _, x in ipairs({-19, 19}) do p("Wall", Vector3.new(1, 11, 41), x, 6, 8, cream) end

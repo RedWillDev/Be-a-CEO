@@ -103,6 +103,7 @@ function L.Start(sessions, W, E, P, send, valid, otherCarry)
  end
  function self:Spawn(owner, s)
   local m = Instance.new("Model") m.Name, m.Parent = "DeliveryParcel", W.City
+  m:SetAttribute("OwnerId", owner.UserId)
   local cf = W.Plots[s.Plot].CF * CFrame.new(9, 1.15, -19)
   local part = W.Part(m, "Box", Vector3.new(2.4, 1.8, 1.8), cf, Color3.fromRGB(181, 132, 81))
   part.CanCollide, part.CanTouch, part.Massless = false, false, true m.PrimaryPart = part

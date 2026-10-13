@@ -311,7 +311,8 @@ Remplace l'ancien découpage V1/V2/V3. **Implémenté** signifie présent dans l
 
 ### O1 — Première réussite guidée
 
-- [x] Boost de vitesse initial +50 % pendant 3 minutes, avec timer ; compatible portage et non renouvelé à la reconnexion en profil publié.
+- [x] Boost initial pendant 3 minutes : vitesse +50 % et argent des ventes en jeu x2, avec deux badges et timers ; compatible portage et non renouvelé à la reconnexion en profil publié.
+- [x] Repères locaux « Ta boutique », colis/caisse/commande selon le besoin ; signalétique bus/place et passage piéton central. À valider visuellement par le joueur.
 
 - [ ] Trois cartes illustrées et premier lot offert une seule fois.
 - [ ] Guidage visuel carton → rayons → client → caisse.
